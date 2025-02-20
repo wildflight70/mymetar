@@ -6,6 +6,8 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
 
+import org.tinylog.Logger;
+
 public class MLoadAPI
 {
 	public MMetar loadCSV(String _stationId)
@@ -39,9 +41,15 @@ public class MLoadAPI
 		}
 		catch (Exception e)
 		{
-			e.printStackTrace();
+			Logger.error(e);
 		}
 
 		return metar;
+	}
+	
+	public static void main(String[] args)
+	{
+		MLoadAPI load = new MLoadAPI();
+		MMetar metar = load.loadCSV("LFPG");
 	}
 }
