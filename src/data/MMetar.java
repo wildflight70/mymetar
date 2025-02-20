@@ -26,7 +26,7 @@ public class MMetar
 	public double altimeterHpa;
 	public double altimeterInHg;
 	public int temperatureC;
-	public int dewPointC;
+	public int dewPointC = Integer.MIN_VALUE;
 	public boolean auto;
 	public boolean noSignal;
 	public boolean correction;
@@ -326,12 +326,17 @@ public class MMetar
 
 				String rawDewPoint = matcher.group(2);
 				if (!rawDewPoint.isEmpty())
-				{
-					if (rawDewPoint.startsWith("M"))
-						dewPointC = -Integer.parseInt(rawDewPoint.substring(1));
-					else
-						dewPointC = Integer.parseInt(rawDewPoint);
-				}
+					try
+					{
+						if (rawDewPoint.startsWith("M"))
+							dewPointC = -Integer.parseInt(rawDewPoint.substring(1));
+						else
+							dewPointC = Integer.parseInt(rawDewPoint);
+					}
+					catch (Exception e)
+					{
+					}
+				
 				replace(_items[i]);
 				return;
 			}

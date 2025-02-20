@@ -1,6 +1,7 @@
 package main;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.text.DecimalFormat;
@@ -237,7 +238,7 @@ public class MModel extends AbstractTableModel
 			@Override
 			public Object get(MMetarEx _metar)
 			{
-				return _metar.dewPointC;
+				return _metar.dewPointC == Integer.MIN_VALUE ? null : _metar.dewPointC;
 			}
 		}));
 
@@ -405,31 +406,37 @@ public class MModel extends AbstractTableModel
 
 		metars = new ArrayList<MMetarEx>();
 
-		try (BufferedReader reader = new BufferedReader(new FileReader(MLoadFTP.LOCAL_DIR + MLoadFTP.METARS_FILE)))
+		String fileName = MLoadFTP.LOCAL_DIR + MLoadFTP.METARS_FILE;
+		if (new File(fileName).exists())
 		{
-			String line;
-			while ((line = reader.readLine()) != null)
-				if (!line.isEmpty())
-				{
-					String[] items = line.split(",");
-
-					LocalDateTime observationTime = LocalDateTime.parse(items[0]);
-
-					MMetarEx metar = new MMetarEx(observationTime, items[1]);
-					metar.xPlane = map.get(metar.stationId);
-					if (metar.xPlane != null)
+			try (BufferedReader reader = new BufferedReader(new FileReader(fileName)))
+			{
+				String line;
+				while ((line = reader.readLine()) != null)
+					if (!line.isEmpty())
 					{
-						metar.extraElevationFt = metar.xPlane.elevationFeet;
-						metar.extraLatitude = metar.xPlane.latitude;
-						metar.extraLongitude = metar.xPlane.longitude;
+						String[] items = line.split(",");
+
+						LocalDateTime observationTime = LocalDateTime.parse(items[0]);
+
+						MMetarEx metar = new MMetarEx(observationTime, items[1]);
+						metar.xPlane = map.get(metar.stationId);
+						if (metar.xPlane != null)
+						{
+							metar.extraElevationFt = metar.xPlane.elevationFeet;
+							metar.extraLatitude = metar.xPlane.latitude;
+							metar.extraLongitude = metar.xPlane.longitude;
+						}
+						metars.add(metar);
 					}
-					metars.add(metar);
-				}
+			}
+			catch (IOException e)
+			{
+				Logger.error(e);
+			}
 		}
-		catch (IOException e)
-		{
-			Logger.error(e);
-		}
+		else
+			Logger.error(fileName + " does not exist");
 
 		sortedColumn = 1;
 		sortedAsc = true;

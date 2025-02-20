@@ -26,10 +26,12 @@
 	<target name="jar" depends="compile">
 		<copy todir="${dist.dir}">
 			<fileset dir="${src.dir}/.." includes="mymetar.cmd" />
+			<fileset dir="${src.dir}/.." includes="mymetar.sh" />
 			<fileset dir="${src.dir}/.." includes="mymetar.ini" />
 			<fileset dir="${src.dir}" includes="tinylog.properties" />
 			<fileset dir="${lib.dir}" includes="*.jar" />
 		</copy>
+        <chmod file="${dist.dir}/mymetar.sh" perm="777" />
 		<jar destfile="${dist.dir}/mymetar.jar" basedir="${build.dir}">
 			<manifest>
 				<attribute name="Main-Class" value="${main.class}" />

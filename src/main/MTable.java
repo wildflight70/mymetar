@@ -45,7 +45,11 @@ public class MTable extends JTable
 		model = _model;
 
 		getTableHeader().setReorderingAllowed(false);
-		setRowHeight((getRowHeight() * 4) / 3);
+		
+		JLabel label = new JLabel("X");
+		label.setBorder(BorderFactory.createEmptyBorder(0, 2, 0, 2));
+		setRowHeight(label.getPreferredSize().height);
+		
 		setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
 
 		// Default rendering with padding
