@@ -77,7 +77,7 @@ public class MModel extends AbstractTableModel
 
 		int col = 0;
 
-		columns.put(col++, new VLColumn("Observation time", false, SwingConstants.LEFT, new Comparator<MMetarEx>()
+		columns.put(col++, new VLColumn("Observation time (Z)", false, SwingConstants.LEFT, new Comparator<MMetarEx>()
 		{
 			@Override
 			public int compare(MMetarEx o1, MMetarEx o2)
@@ -188,6 +188,25 @@ public class MModel extends AbstractTableModel
 			public Object get(MMetarEx _metar)
 			{
 				return _metar.xPlane == null ? null : true;
+			}
+		}));
+
+		columns.put(col++, new VLColumn("Flight category", true, SwingConstants.CENTER, new Comparator<MMetarEx>()
+		{
+			@Override
+			public int compare(MMetarEx o1, MMetarEx o2)
+			{
+				int c = o1.extraFlightCategory.compareTo(o2.extraFlightCategory);
+				if (!sortedAsc)
+					c = -c;
+				return c;
+			}
+		}, new VLColumnValue()
+		{
+			@Override
+			public Object get(MMetarEx _metar)
+			{
+				return _metar.extraFlightCategory;
 			}
 		}));
 

@@ -43,6 +43,7 @@ public class MMetar
 	public int extraElevationFt = Integer.MIN_VALUE;
 	public double extraLatitude = Double.NaN;
 	public double extraLongitude = Double.NaN;
+	public String extraFlightCategory = "";
 
 	public String rawTextHighlight;
 	public boolean found;
@@ -132,8 +133,15 @@ public class MMetar
 
 	public MMetar(String _fields, String _values)
 	{
-		String[] fields = _fields.split(",");
 		String[] values = _values.split(",");
+
+		rawText = values[0];
+		stationId = values[1];
+		observationTime = LocalDateTime.parse(values[2].substring(0, values[2].length() - 1));
+		extraLatitude = Double.parseDouble(values[3]);
+		extraLongitude = Double.parseDouble(values[4]);
+		extraElevationFt = (int) Math.round(metersToFeet(Integer.parseInt(values[43])));
+		extraFlightCategory = values[30];
 	}
 
 	public String cloudToString()
@@ -336,7 +344,7 @@ public class MMetar
 					catch (Exception e)
 					{
 					}
-				
+
 				replace(_items[i]);
 				return;
 			}
@@ -452,6 +460,11 @@ public class MMetar
 	private double metersToSM(double _meters)
 	{
 		return _meters * 0.000621371;
+	}
+
+	private double metersToFeet(double _meters)
+	{
+		return _meters * 3.28084;
 	}
 
 	private double hPaToInHg(double _hPa)

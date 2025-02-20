@@ -66,7 +66,7 @@ public class MMainWindow extends JFrame
 		menuBar.add(menuFile);
 
 		// Menu File > Load FTP
-		JMenuItem menuFileLoad = new JMenuItem("Load FTP");
+		JMenuItem menuFileLoad = new JMenuItem("Load NOAA FTP");
 		menuFileLoad.addActionListener(new ActionListener()
 		{
 			public void actionPerformed(ActionEvent evt)

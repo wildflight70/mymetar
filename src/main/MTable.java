@@ -3,6 +3,8 @@ package main;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Desktop;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.net.URI;
@@ -10,6 +12,8 @@ import java.util.ArrayList;
 
 import javax.swing.BorderFactory;
 import javax.swing.JLabel;
+import javax.swing.JMenuItem;
+import javax.swing.JPopupMenu;
 import javax.swing.JTable;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
@@ -21,6 +25,7 @@ import javax.swing.table.TableColumnModel;
 
 import org.tinylog.Logger;
 
+import data.MLoadAPI;
 import data.MMetar;
 import main.MModel.VLColumn;
 import util.MColor;
@@ -45,11 +50,11 @@ public class MTable extends JTable
 		model = _model;
 
 		getTableHeader().setReorderingAllowed(false);
-		
+
 		JLabel label = new JLabel("X");
 		label.setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
 		setRowHeight(label.getPreferredSize().height);
-		
+
 		setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
 
 		// Default rendering with padding
@@ -60,7 +65,7 @@ public class MTable extends JTable
 					int row, int column)
 			{
 				JLabel label = (JLabel) super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-				label.setBorder(BorderFactory.createEmptyBorder(0, 2, 0, 2));
+				label.setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
 				return label;
 			}
 		}
@@ -123,6 +128,53 @@ public class MTable extends JTable
 					doOpenGoogleMaps();
 			}
 		});
+
+		initMenu();
+	}
+
+	private void initMenu()
+	{
+		JPopupMenu popup = new JPopupMenu();
+
+		JMenuItem menuItemLoadAPI = new JMenuItem("Load from NOAA API");
+		menuItemLoadAPI.addActionListener(new ActionListener()
+		{
+			@Override
+			public void actionPerformed(ActionEvent e)
+			{
+				doLoadAPI();
+			}
+		});
+		popup.add(menuItemLoadAPI);
+
+		addMouseListener(new MouseAdapter()
+		{
+			private void showPopup(MouseEvent e)
+			{
+				int col = columnAtPoint(e.getPoint());
+				if (col >= 0)
+					setColumnSelectionInterval(col, col);
+				int row = rowAtPoint(e.getPoint());
+				if (row >= 0)
+					setRowSelectionInterval(row, row);
+				if (e.isPopupTrigger())
+					popup.show(e.getComponent(), e.getX(), e.getY());
+			}
+
+			@Override
+			public void mousePressed(MouseEvent e)
+			{
+				if (e.getButton() == MouseEvent.BUTTON3)
+					showPopup(e);
+			}
+
+			@Override
+			public void mouseReleased(MouseEvent e)
+			{
+				if (e.getButton() == MouseEvent.BUTTON3)
+					showPopup(e);
+			}
+		});
 	}
 
 	@Override
@@ -166,7 +218,7 @@ public class MTable extends JTable
 			for (int i = 0; i < findRows.size(); i++)
 			{
 				int row = findRows.get(i);
-				MMetarEx metar = model.metars.get(row);
+				MMetar metar = model.metars.get(row);
 				metar.found = false;
 				model.fireTableRowsUpdated(row, row);
 			}
@@ -175,7 +227,7 @@ public class MTable extends JTable
 			if (!_text.isEmpty())
 				for (int i = 0; i < model.metars.size(); i++)
 				{
-					MMetarEx metar = model.metars.get(i);
+					MMetar metar = model.metars.get(i);
 					if (metar.stationId.contains(_text))
 					{
 						findRows.add(i);
@@ -197,10 +249,10 @@ public class MTable extends JTable
 
 	private void doOpenGoogleMaps()
 	{
-		MMetarEx metar = model.metars.get(getSelectedRow());
-		if (metar.xPlane != null)
+		MMetar metar = model.metars.get(getSelectedRow());
+		if (metar != null)
 		{
-			String url = "https://www.google.com/maps?q=" + metar.xPlane.latitude + "," + metar.xPlane.longitude;
+			String url = "https://www.google.com/maps?q=" + metar.extraLatitude + "," + metar.extraLongitude;
 			if (Desktop.isDesktopSupported())
 			{
 				try
@@ -212,6 +264,25 @@ public class MTable extends JTable
 					Logger.error(e);
 				}
 			}
+		}
+	}
+
+	private void doLoadAPI()
+	{
+		int selectedRow = getSelectedRow();
+
+		MMetar selectedMetar = model.metars.get(selectedRow);
+
+		MLoadAPI load = new MLoadAPI();
+		MMetar metar = load.loadCSV(selectedMetar.stationId);
+		if (metar != null)
+		{
+			selectedMetar.extraElevationFt = metar.extraElevationFt;
+			selectedMetar.extraLatitude = metar.extraLatitude;
+			selectedMetar.extraLongitude = metar.extraLongitude;
+			selectedMetar.extraFlightCategory = metar.extraFlightCategory;
+
+			model.fireTableRowsUpdated(selectedRow, selectedRow);
 		}
 	}
 }
