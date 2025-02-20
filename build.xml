@@ -1,0 +1,40 @@
+<project name="myMetar" default="jar" basedir=".">
+	<property name="src.dir" value="src" />
+	<property name="build.dir" value="build" />
+	<property name="dist.dir" value="dist" />
+	<property name="main.class" value="main.MMain" />
+	<property name="lib.dir" value="lib" />
+
+	<target name="clean">
+		<delete dir="${build.dir}" />
+		<delete dir="${dist.dir}" />
+	</target>
+
+	<target name="init" depends="clean">
+		<mkdir dir="${build.dir}" />
+		<mkdir dir="${dist.dir}" />
+	</target>
+
+	<target name="compile" depends="init">
+		<javac encoding="UTF-8" debug="false" optimize="true" srcdir="${src.dir}" destdir="${build.dir}" includeantruntime="false">
+			<classpath>
+				<fileset dir="${lib.dir}" includes="*.jar" />
+			</classpath>
+		</javac>
+	</target>
+
+	<target name="jar" depends="compile">
+		<copy todir="${dist.dir}">
+			<fileset dir="${src.dir}/.." includes="mymetar.cmd" />
+			<fileset dir="${src.dir}/.." includes="mymetar.ini" />
+			<fileset dir="${src.dir}" includes="tinylog.properties" />
+			<fileset dir="${lib.dir}" includes="*.jar" />
+		</copy>
+		<jar destfile="${dist.dir}/mymetar.jar" basedir="${build.dir}">
+			<manifest>
+				<attribute name="Main-Class" value="${main.class}" />
+				<attribute name="Class-Path" value=". commons-net-3.11.1.jar tinylog-api-2.7.0.jar tinylog-impl-2.7.0.jar" />
+			</manifest>
+		</jar>
+	</target>
+</project>
