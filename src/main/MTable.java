@@ -47,7 +47,7 @@ public class MTable extends JTable
 		getTableHeader().setReorderingAllowed(false);
 		
 		JLabel label = new JLabel("X");
-		label.setBorder(BorderFactory.createEmptyBorder(0, 2, 0, 2));
+		label.setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
 		setRowHeight(label.getPreferredSize().height);
 		
 		setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
