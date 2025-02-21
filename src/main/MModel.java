@@ -17,18 +17,22 @@ import javax.swing.table.AbstractTableModel;
 
 import org.tinylog.Logger;
 
-import data.MLoadFTP;
+import data.MAirport;
+import data.MLoadNOAAAPI;
+import data.MLoadNOAAFTP;
 import data.MLoadXPlane;
+import data.MMetar;
+import data.MOurAirports;
 import data.MXPlane;
 
 @SuppressWarnings("serial")
 public class MModel extends AbstractTableModel
 {
-	public ArrayList<MMetarEx> metars;
+	public ArrayList<MAirport> airports;
 
 	private interface VLColumnValue
 	{
-		public Object get(MMetarEx _metar);
+		public Object get(MAirport _airport);
 	}
 
 	public static class VLColumn
@@ -36,10 +40,10 @@ public class MModel extends AbstractTableModel
 		public String name;
 		public boolean extra;
 		public int alignment; // SwingConstants.LEFT, SwingConstants.RIGHT, SwingConstants.CENTER;
-		public Comparator<MMetarEx> comparator;
+		public Comparator<MAirport> comparator;
 		public VLColumnValue value;
 
-		public VLColumn(String _name, boolean _extra, int _alignment, Comparator<MMetarEx> _comparator,
+		public VLColumn(String _name, boolean _extra, int _alignment, Comparator<MAirport> _comparator,
 				VLColumnValue _value)
 		{
 			name = _name;
@@ -77,12 +81,12 @@ public class MModel extends AbstractTableModel
 
 		int col = 0;
 
-		columns.put(col++, new VLColumn("Observation time (Z)", false, SwingConstants.LEFT, new Comparator<MMetarEx>()
+		columns.put(col++, new VLColumn("Observation time (Z)", false, SwingConstants.LEFT, new Comparator<MAirport>()
 		{
 			@Override
-			public int compare(MMetarEx o1, MMetarEx o2)
+			public int compare(MAirport o1, MAirport o2)
 			{
-				int c = o1.observationTime.compareTo(o2.observationTime);
+				int c = o1.metar.observationTime.compareTo(o2.metar.observationTime);
 				if (!sortedAsc)
 					c = -c;
 				return c;
@@ -90,16 +94,16 @@ public class MModel extends AbstractTableModel
 		}, new VLColumnValue()
 		{
 			@Override
-			public Object get(MMetarEx _metar)
+			public Object get(MAirport _airport)
 			{
-				return _metar.observationTime;
+				return _airport.metar == null ? null : _airport.metar.observationTime;
 			}
 		}));
 
-		columns.put(col++, new VLColumn("Station id", false, SwingConstants.LEFT, new Comparator<MMetarEx>()
+		columns.put(col++, new VLColumn("Station id", false, SwingConstants.LEFT, new Comparator<MAirport>()
 		{
 			@Override
-			public int compare(MMetarEx o1, MMetarEx o2)
+			public int compare(MAirport o1, MAirport o2)
 			{
 				int c = o1.stationId.compareTo(o2.stationId);
 				if (!sortedAsc)
@@ -109,18 +113,18 @@ public class MModel extends AbstractTableModel
 		}, new VLColumnValue()
 		{
 			@Override
-			public Object get(MMetarEx _metar)
+			public Object get(MAirport _airport)
 			{
-				return _metar.stationId;
+				return _airport.stationId;
 			}
 		}));
 
-		columns.put(col++, new VLColumn("Elevation (ft)", true, SwingConstants.RIGHT, new Comparator<MMetarEx>()
+		columns.put(col++, new VLColumn("Elevation (ft)", true, SwingConstants.RIGHT, new Comparator<MAirport>()
 		{
 			@Override
-			public int compare(MMetarEx o1, MMetarEx o2)
+			public int compare(MAirport o1, MAirport o2)
 			{
-				int c = Integer.compare(o1.extraElevationFt, o2.extraElevationFt);
+				int c = Integer.compare(o1.elevationFt, o2.elevationFt);
 				if (!sortedAsc)
 					c = -c;
 				return c;
@@ -128,18 +132,18 @@ public class MModel extends AbstractTableModel
 		}, new VLColumnValue()
 		{
 			@Override
-			public Object get(MMetarEx _metar)
+			public Object get(MAirport _airport)
 			{
-				return _metar.extraElevationFt != Integer.MIN_VALUE ? _metar.extraElevationFt : null;
+				return _airport.elevationFt != Integer.MIN_VALUE ? _airport.elevationFt : null;
 			}
 		}));
 
-		columns.put(col++, new VLColumn("Latitude", true, SwingConstants.RIGHT, new Comparator<MMetarEx>()
+		columns.put(col++, new VLColumn("Latitude", true, SwingConstants.RIGHT, new Comparator<MAirport>()
 		{
 			@Override
-			public int compare(MMetarEx o1, MMetarEx o2)
+			public int compare(MAirport o1, MAirport o2)
 			{
-				int c = Double.compare(o1.extraLatitude, o2.extraLatitude);
+				int c = Double.compare(o1.latitude, o2.latitude);
 				if (!sortedAsc)
 					c = -c;
 				return c;
@@ -147,18 +151,18 @@ public class MModel extends AbstractTableModel
 		}, new VLColumnValue()
 		{
 			@Override
-			public Object get(MMetarEx _metar)
+			public Object get(MAirport _airport)
 			{
-				return Double.isNaN(_metar.extraLatitude) ? null : _metar.extraLatitude;
+				return Double.isNaN(_airport.latitude) ? null : _airport.latitude;
 			}
 		}));
 
-		columns.put(col++, new VLColumn("Longitude", true, SwingConstants.RIGHT, new Comparator<MMetarEx>()
+		columns.put(col++, new VLColumn("Longitude", true, SwingConstants.RIGHT, new Comparator<MAirport>()
 		{
 			@Override
-			public int compare(MMetarEx o1, MMetarEx o2)
+			public int compare(MAirport o1, MAirport o2)
 			{
-				int c = Double.compare(o1.extraLongitude, o2.extraLongitude);
+				int c = Double.compare(o1.longitude, o2.longitude);
 				if (!sortedAsc)
 					c = -c;
 				return c;
@@ -166,18 +170,18 @@ public class MModel extends AbstractTableModel
 		}, new VLColumnValue()
 		{
 			@Override
-			public Object get(MMetarEx _metar)
+			public Object get(MAirport _airport)
 			{
-				return Double.isNaN(_metar.extraLongitude) ? null : _metar.extraLongitude;
+				return Double.isNaN(_airport.longitude) ? null : _airport.longitude;
 			}
 		}));
 
-		columns.put(col++, new VLColumn("X Plane", true, SwingConstants.CENTER, new Comparator<MMetarEx>()
+		columns.put(col++, new VLColumn("X Plane", true, SwingConstants.CENTER, new Comparator<MAirport>()
 		{
 			@Override
-			public int compare(MMetarEx o1, MMetarEx o2)
+			public int compare(MAirport o1, MAirport o2)
 			{
-				int c = Boolean.compare(o1.xPlane != null, o2.xPlane != null);
+				int c = Boolean.compare(o1.xPlane, o2.xPlane);
 				if (!sortedAsc)
 					c = -c;
 				return c;
@@ -185,18 +189,18 @@ public class MModel extends AbstractTableModel
 		}, new VLColumnValue()
 		{
 			@Override
-			public Object get(MMetarEx _metar)
+			public Object get(MAirport _airport)
 			{
-				return _metar.xPlane == null ? null : true;
+				return _airport.xPlane;
 			}
 		}));
 
-		columns.put(col++, new VLColumn("Flight category", true, SwingConstants.CENTER, new Comparator<MMetarEx>()
+		columns.put(col++, new VLColumn("Flight category", true, SwingConstants.CENTER, new Comparator<MAirport>()
 		{
 			@Override
-			public int compare(MMetarEx o1, MMetarEx o2)
+			public int compare(MAirport o1, MAirport o2)
 			{
-				int c = o1.extraFlightCategory.compareTo(o2.extraFlightCategory);
+				int c = o1.metar.extraFlightCategory.compareTo(o2.metar.extraFlightCategory);
 				if (!sortedAsc)
 					c = -c;
 				return c;
@@ -204,18 +208,18 @@ public class MModel extends AbstractTableModel
 		}, new VLColumnValue()
 		{
 			@Override
-			public Object get(MMetarEx _metar)
+			public Object get(MAirport _airport)
 			{
-				return _metar.extraFlightCategory;
+				return _airport.metar == null ? null : _airport.metar.extraFlightCategory;
 			}
 		}));
 
-		columns.put(col++, new VLColumn("Altimeter (inHg/hPa)", false, SwingConstants.RIGHT, new Comparator<MMetarEx>()
+		columns.put(col++, new VLColumn("Altimeter (inHg/hPa)", false, SwingConstants.RIGHT, new Comparator<MAirport>()
 		{
 			@Override
-			public int compare(MMetarEx o1, MMetarEx o2)
+			public int compare(MAirport o1, MAirport o2)
 			{
-				int c = Double.compare(o1.altimeterHpa, o2.altimeterHpa);
+				int c = Double.compare(o1.metar.altimeterHpa, o2.metar.altimeterHpa);
 				if (!sortedAsc)
 					c = -c;
 				return c;
@@ -223,22 +227,22 @@ public class MModel extends AbstractTableModel
 		}, new VLColumnValue()
 		{
 			@Override
-			public Object get(MMetarEx _metar)
+			public Object get(MAirport _airport)
 			{
-				if (_metar.altimeterInHg == 0)
+				if (_airport.metar == null || _airport.metar.altimeterInHg == 0)
 					return null;
 				else
-					return numberFormatDecimal2.format(_metar.altimeterInHg) + " / "
-							+ numberFormatDecimal0.format(_metar.altimeterHpa);
+					return numberFormatDecimal2.format(_airport.metar.altimeterInHg) + " / "
+							+ numberFormatDecimal0.format(_airport.metar.altimeterHpa);
 			}
 		}));
 
-		columns.put(col++, new VLColumn("Temperature (°C)", false, SwingConstants.RIGHT, new Comparator<MMetarEx>()
+		columns.put(col++, new VLColumn("Temperature (°C)", false, SwingConstants.RIGHT, new Comparator<MAirport>()
 		{
 			@Override
-			public int compare(MMetarEx o1, MMetarEx o2)
+			public int compare(MAirport o1, MAirport o2)
 			{
-				int c = Integer.compare(o1.temperatureC, o2.temperatureC);
+				int c = Integer.compare(o1.metar.temperatureC, o2.metar.temperatureC);
 				if (!sortedAsc)
 					c = -c;
 				return c;
@@ -246,27 +250,28 @@ public class MModel extends AbstractTableModel
 		}, new VLColumnValue()
 		{
 			@Override
-			public Object get(MMetarEx _metar)
+			public Object get(MAirport _airport)
 			{
-				return _metar.temperatureC;
+				return _airport.metar == null ? null : _airport.metar.temperatureC;
 			}
 		}));
 
 		columns.put(col++, new VLColumn("DewPoint (°C)", false, SwingConstants.RIGHT, null, new VLColumnValue()
 		{
 			@Override
-			public Object get(MMetarEx _metar)
+			public Object get(MAirport _airport)
 			{
-				return _metar.dewPointC == Integer.MIN_VALUE ? null : _metar.dewPointC;
+				return (_airport.metar == null || _airport.metar.dewPointC == Integer.MIN_VALUE) ? null
+						: _airport.metar.dewPointC;
 			}
 		}));
 
-		columns.put(col++, new VLColumn("Visibility (SM)", false, SwingConstants.RIGHT, new Comparator<MMetarEx>()
+		columns.put(col++, new VLColumn("Visibility (SM)", false, SwingConstants.RIGHT, new Comparator<MAirport>()
 		{
 			@Override
-			public int compare(MMetarEx o1, MMetarEx o2)
+			public int compare(MAirport o1, MAirport o2)
 			{
-				int c = Double.compare(o1.visibilitySM, o2.visibilitySM);
+				int c = Double.compare(o1.metar.visibilitySM, o2.metar.visibilitySM);
 				if (!sortedAsc)
 					c = -c;
 				return c;
@@ -274,27 +279,30 @@ public class MModel extends AbstractTableModel
 		}, new VLColumnValue()
 		{
 			@Override
-			public Object get(MMetarEx _metar)
+			public Object get(MAirport _airport)
 			{
-				return _metar.visibilitySM >= 0 ? _metar.visibilitySM : null;
+				return (_airport.metar == null || _airport.metar.visibilitySM < 0) ? null : _airport.metar.visibilitySM;
 			}
 		}));
 
 		columns.put(col++, new VLColumn("Wind direction (°)", false, SwingConstants.RIGHT, null, new VLColumnValue()
 		{
 			@Override
-			public Object get(MMetarEx _metar)
+			public Object get(MAirport _airport)
 			{
-				return _metar.windDirectionDegree < 0 ? "variable" : _metar.windDirectionDegree;
+				if (_airport.metar == null)
+					return null;
+				else
+					return _airport.metar.windDirectionDegree < 0 ? "variable" : _airport.metar.windDirectionDegree;
 			}
 		}));
 
-		columns.put(col++, new VLColumn("Wind speed (kt)", false, SwingConstants.RIGHT, new Comparator<MMetarEx>()
+		columns.put(col++, new VLColumn("Wind speed (kt)", false, SwingConstants.RIGHT, new Comparator<MAirport>()
 		{
 			@Override
-			public int compare(MMetarEx o1, MMetarEx o2)
+			public int compare(MAirport o1, MAirport o2)
 			{
-				int c = Integer.compare(o1.windSpeedKt, o2.windSpeedKt);
+				int c = Integer.compare(o1.metar.windSpeedKt, o2.metar.windSpeedKt);
 				if (!sortedAsc)
 					c = -c;
 				return c;
@@ -302,18 +310,18 @@ public class MModel extends AbstractTableModel
 		}, new VLColumnValue()
 		{
 			@Override
-			public Object get(MMetarEx _metar)
+			public Object get(MAirport _airport)
 			{
-				return _metar.windSpeedKt;
+				return _airport.metar == null ? null : _airport.metar.windSpeedKt;
 			}
 		}));
 
-		columns.put(col++, new VLColumn("Wind gust (kt)", false, SwingConstants.RIGHT, new Comparator<MMetarEx>()
+		columns.put(col++, new VLColumn("Wind gust (kt)", false, SwingConstants.RIGHT, new Comparator<MAirport>()
 		{
 			@Override
-			public int compare(MMetarEx o1, MMetarEx o2)
+			public int compare(MAirport o1, MAirport o2)
 			{
-				int c = Integer.compare(o1.windGustKt, o2.windGustKt);
+				int c = Integer.compare(o1.metar.windGustKt, o2.metar.windGustKt);
 				if (!sortedAsc)
 					c = -c;
 				return c;
@@ -321,72 +329,76 @@ public class MModel extends AbstractTableModel
 		}, new VLColumnValue()
 		{
 			@Override
-			public Object get(MMetarEx _metar)
+			public Object get(MAirport _airport)
 			{
-				return _metar.windGustKt > 0 ? _metar.windGustKt : null;
+				return (_airport.metar == null || _airport.metar.windGustKt <= 0) ? null : _airport.metar.windGustKt;
 			}
 		}));
 
 		columns.put(col++, new VLColumn("Wind variable (°)", false, SwingConstants.RIGHT, null, new VLColumnValue()
 		{
 			@Override
-			public Object get(MMetarEx _metar)
+			public Object get(MAirport _airport)
 			{
-				return _metar.windVariable ? (_metar.windFromDegree + " to " + _metar.windToDegree) : null;
+				if (_airport.metar == null)
+					return null;
+				else
+					return _airport.metar.windVariable ? (_airport.metar.windFromDegree + " to " + _airport.metar.windToDegree)
+							: null;
 			}
 		}));
 
 		columns.put(col++, new VLColumn("Clouds (ft)", false, SwingConstants.LEFT, null, new VLColumnValue()
 		{
 			@Override
-			public Object get(MMetarEx _metar)
+			public Object get(MAirport _airport)
 			{
-				return _metar.cloudToString();
+				return _airport.metar == null ? null : _airport.metar.cloudToString();
 			}
 		}));
 
 		columns.put(col++, new VLColumn("Weather", false, SwingConstants.LEFT, null, new VLColumnValue()
 		{
 			@Override
-			public Object get(MMetarEx _metar)
+			public Object get(MAirport _airport)
 			{
-				return _metar.weather;
+				return _airport.metar == null ? null : _airport.metar.weather;
 			}
 		}));
 
 		columns.put(col++, new VLColumn("Auto", false, SwingConstants.CENTER, null, new VLColumnValue()
 		{
 			@Override
-			public Object get(MMetarEx _metar)
+			public Object get(MAirport _airport)
 			{
-				return _metar.auto ? true : null;
+				return _airport.metar == null || !_airport.metar.auto ? null : true;
 			}
 		}));
 
 		columns.put(col++, new VLColumn("No signal", false, SwingConstants.CENTER, null, new VLColumnValue()
 		{
 			@Override
-			public Object get(MMetarEx _metar)
+			public Object get(MAirport _airport)
 			{
-				return _metar.noSignal ? true : null;
+				return _airport.metar == null || !_airport.metar.noSignal ? null : true;
 			}
 		}));
 
 		columns.put(col++, new VLColumn("Correction", false, SwingConstants.CENTER, null, new VLColumnValue()
 		{
 			@Override
-			public Object get(MMetarEx _metar)
+			public Object get(MAirport _airport)
 			{
-				return _metar.correction ? true : null;
+				return _airport.metar == null || !_airport.metar.correction ? null : true;
 			}
 		}));
 
 		columns.put(col++, new VLColumn("Raw", false, SwingConstants.LEFT, null, new VLColumnValue()
 		{
 			@Override
-			public Object get(MMetarEx _metar)
+			public Object get(MAirport _airport)
 			{
-				return _metar.rawTextHighlight;
+				return _airport.metar == null ? null : _airport.metar.rawTextHighlight;
 			}
 		}));
 	}
@@ -394,7 +406,7 @@ public class MModel extends AbstractTableModel
 	@Override
 	public int getRowCount()
 	{
-		return metars.size();
+		return airports.size();
 	}
 
 	@Override
@@ -412,8 +424,16 @@ public class MModel extends AbstractTableModel
 	@Override
 	public Object getValueAt(int rowIndex, int columnIndex)
 	{
-		MMetarEx metar = metars.get(rowIndex);
-		return columns.get(columnIndex).value.get(metar);
+		MAirport airport = airports.get(rowIndex);
+		return columns.get(columnIndex).value.get(airport);
+	}
+
+	private MAirport get(String _stationId)
+	{
+		int i = airports.size() - 1;
+		while (i >= 0 && !airports.get(i).stationId.equals(_stationId))
+			i--;
+		return i >= 0 ? airports.get(i) : null;
 	}
 
 	public void load()
@@ -423,9 +443,12 @@ public class MModel extends AbstractTableModel
 		MLoadXPlane loadXPlane = new MLoadXPlane();
 		HashMap<String, MXPlane> map = loadXPlane.load();
 
-		metars = new ArrayList<MMetarEx>();
+		MLoadNOAAAPI loadAPI = new MLoadNOAAAPI();
+		HashMap<String, MMetar> apiMetars = loadAPI.load();
 
-		String fileName = MLoadFTP.LOCAL_DIR + MLoadFTP.METARS_FILE;
+		airports = new MOurAirports().loadAirports();
+
+		String fileName = MLoadNOAAFTP.LOCAL_DIR + MLoadNOAAFTP.METARS_FILE;
 		if (new File(fileName).exists())
 		{
 			try (BufferedReader reader = new BufferedReader(new FileReader(fileName)))
@@ -438,15 +461,19 @@ public class MModel extends AbstractTableModel
 
 						LocalDateTime observationTime = LocalDateTime.parse(items[0]);
 
-						MMetarEx metar = new MMetarEx(observationTime, items[1]);
-						metar.xPlane = map.get(metar.stationId);
-						if (metar.xPlane != null)
+						MMetar metar = new MMetar(observationTime, items[1]);
+						metar.decode();
+
+						MAirport airport = get(metar.stationId);
+						if (airport != null)
 						{
-							metar.extraElevationFt = metar.xPlane.elevationFeet;
-							metar.extraLatitude = metar.xPlane.latitude;
-							metar.extraLongitude = metar.xPlane.longitude;
+							airport.metar = metar;
+							airport.xPlane = map.containsKey(metar.stationId);
 						}
-						metars.add(metar);
+
+						MMetar apiMetar = apiMetars.get(metar.stationId);
+						if (apiMetar != null)
+							metar.extraFlightCategory = apiMetar.extraFlightCategory;
 					}
 			}
 			catch (IOException e)
@@ -480,6 +507,6 @@ public class MModel extends AbstractTableModel
 	{
 		columns.get(sortedColumn).name += sortedAsc ? " +" : " -";
 
-		Collections.sort(metars, columns.get(sortedColumn).comparator);
+		Collections.sort(airports, columns.get(sortedColumn).comparator);
 	}
 }

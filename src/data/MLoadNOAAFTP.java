@@ -25,10 +25,10 @@ import org.tinylog.Logger;
 
 import util.MProperties;
 
-public class MLoadFTP
+public class MLoadNOAAFTP
 {
 	public static final String LOCAL_DIR = "temp/";
-	public static final String METARS_FILE = "metars.csv";
+	public static final String METARS_FILE = "ftp_metars.csv";
 
 	private String server;
 	private int port;
@@ -36,14 +36,14 @@ public class MLoadFTP
 	private String password;
 	private String remoteDir;
 
-	public boolean downloadThread()
+	public boolean download()
 	{
-		Logger.debug("downloadThread begin");
+		Logger.debug("download begin");
 
 		boolean ok = true;
-		
+
 		File localDir = new File(LOCAL_DIR);
-		if(!localDir.exists())
+		if (!localDir.exists())
 			localDir.mkdir();
 
 		int processors = Runtime.getRuntime().availableProcessors();
@@ -91,7 +91,7 @@ public class MLoadFTP
 
 		executor.shutdown();
 
-		Logger.debug("downloadThread end");
+		Logger.debug("download end");
 
 		return ok;
 	}
@@ -126,9 +126,9 @@ public class MLoadFTP
 		}
 	}
 
-	public ArrayList<MMetar> loadAllThread()
+	public ArrayList<MMetar> loadAll()
 	{
-		Logger.debug("loadAllThread begin");
+		Logger.debug("loadAll begin");
 
 		int processors = Runtime.getRuntime().availableProcessors();
 
@@ -166,7 +166,7 @@ public class MLoadFTP
 			metars.add(metar);
 		});
 
-		Logger.debug("loadAllThread end");
+		Logger.debug("loadAll end");
 
 		return metars;
 	}
@@ -245,11 +245,11 @@ public class MLoadFTP
 		return metars;
 	}
 
-	public boolean write(ArrayList<MMetar> _metars, String _file)
+	public boolean write(ArrayList<MMetar> _metars)
 	{
 		boolean ok = true;
 
-		try (BufferedWriter writer = new BufferedWriter(new FileWriter(_file)))
+		try (BufferedWriter writer = new BufferedWriter(new FileWriter(LOCAL_DIR + METARS_FILE)))
 		{
 			for (MMetar metar : _metars)
 			{

@@ -25,7 +25,8 @@ import javax.swing.table.TableColumnModel;
 
 import org.tinylog.Logger;
 
-import data.MLoadAPI;
+import data.MAirport;
+import data.MLoadNOAAAPI;
 import data.MMetar;
 import main.MModel.VLColumn;
 import util.MColor;
@@ -113,7 +114,7 @@ public class MTable extends JTable
 				{
 					int row = getSelectedRow();
 					if (row >= 0 && row < getRowCount())
-						MBottom.instance.update(model.metars.get(row));
+						MBottom.instance.update(model.airports.get(row));
 				}
 			}
 		});
@@ -194,8 +195,8 @@ public class MTable extends JTable
 
 		((JLabel) c).setHorizontalAlignment(column.alignment);
 
-		MMetar metar = model.metars.get(row);
-		c.setForeground(metar.found ? FOUND_COLOR : Color.BLACK);
+		MAirport airport = model.airports.get(row);
+		c.setForeground(airport.found ? FOUND_COLOR : Color.BLACK);
 
 		return c;
 	}
@@ -218,20 +219,20 @@ public class MTable extends JTable
 			for (int i = 0; i < findRows.size(); i++)
 			{
 				int row = findRows.get(i);
-				MMetar metar = model.metars.get(row);
-				metar.found = false;
+				MAirport airport = model.airports.get(row);
+				airport.found = false;
 				model.fireTableRowsUpdated(row, row);
 			}
 			findRows.clear();
 
 			if (!_text.isEmpty())
-				for (int i = 0; i < model.metars.size(); i++)
+				for (int i = 0; i < model.airports.size(); i++)
 				{
-					MMetar metar = model.metars.get(i);
-					if (metar.stationId.contains(_text))
+					MAirport airport = model.airports.get(i);
+					if (airport.stationId.contains(_text))
 					{
 						findRows.add(i);
-						metar.found = true;
+						airport.found = true;
 						model.fireTableRowsUpdated(i, i);
 					}
 				}
@@ -249,20 +250,17 @@ public class MTable extends JTable
 
 	private void doOpenGoogleMaps()
 	{
-		MMetar metar = model.metars.get(getSelectedRow());
-		if (metar != null)
+		MAirport airport = model.airports.get(getSelectedRow());
+		String url = "https://www.google.com/maps?q=" + airport.latitude + "," + airport.longitude;
+		if (Desktop.isDesktopSupported())
 		{
-			String url = "https://www.google.com/maps?q=" + metar.extraLatitude + "," + metar.extraLongitude;
-			if (Desktop.isDesktopSupported())
+			try
 			{
-				try
-				{
-					Desktop.getDesktop().browse(new URI(url));
-				}
-				catch (Exception e)
-				{
-					Logger.error(e);
-				}
+				Desktop.getDesktop().browse(new URI(url));
+			}
+			catch (Exception e)
+			{
+				Logger.error(e);
 			}
 		}
 	}
@@ -271,18 +269,17 @@ public class MTable extends JTable
 	{
 		int selectedRow = getSelectedRow();
 
-		MMetar selectedMetar = model.metars.get(selectedRow);
-
-		MLoadAPI load = new MLoadAPI();
-		MMetar metar = load.loadCSV(selectedMetar.stationId);
-		if (metar != null)
+		MAirport selectedAirport = model.airports.get(selectedRow);
+		if (selectedAirport.metar != null)
 		{
-			selectedMetar.extraElevationFt = metar.extraElevationFt;
-			selectedMetar.extraLatitude = metar.extraLatitude;
-			selectedMetar.extraLongitude = metar.extraLongitude;
-			selectedMetar.extraFlightCategory = metar.extraFlightCategory;
+			MLoadNOAAAPI load = new MLoadNOAAAPI();
+			MMetar metar = load.downloadCSV(selectedAirport.stationId);
+			if (metar != null)
+			{
+				selectedAirport.metar.extraFlightCategory = metar.extraFlightCategory;
 
-			model.fireTableRowsUpdated(selectedRow, selectedRow);
+				model.fireTableRowsUpdated(selectedRow, selectedRow);
+			}
 		}
 	}
 }

@@ -8,6 +8,8 @@ import java.awt.Insets;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 
+import data.MAirport;
+
 @SuppressWarnings("serial")
 public class MBottom extends JPanel
 {
@@ -71,19 +73,10 @@ public class MBottom extends JPanel
 		add(labelCityValue, c);
 	}
 
-	public void update(MMetarEx _metar)
+	public void update(MAirport _airport)
 	{
-		if (_metar.xPlane != null)
-		{
-			labelAirportValue.setText(_metar.xPlane.airportName);
-			labelCountryValue.setText(_metar.xPlane.country);
-			labelCityValue.setText(_metar.xPlane.city);
-		}
-		else
-		{
-			labelAirportValue.setText("");
-			labelCountryValue.setText("");
-			labelCityValue.setText("");
-		}
+		labelAirportValue.setText(_airport.name);
+		labelCountryValue.setText(_airport.country);
+		labelCityValue.setText(_airport.city);
 	}
 }

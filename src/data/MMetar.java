@@ -21,8 +21,8 @@ public class MMetar
 			.compile("(-|\\+|VC|RE)?(MI|BC|DR|BL|SH|TS|FZ)?(VCSH|RA|DZ|SN|SG|IC|PL|GR|GS|FG|BR|HZ|FU|VA|DU|SA|SQ|FC|SS|DS)$");
 
 	public String rawText;
-	public LocalDateTime observationTime;
 	public String stationId;
+	public LocalDateTime observationTime;
 	public double altimeterHpa;
 	public double altimeterInHg;
 	public int temperatureC;
@@ -40,13 +40,9 @@ public class MMetar
 	public String weather;
 	public ArrayList<VLMetarCloud> clouds;
 
-	public int extraElevationFt = Integer.MIN_VALUE;
-	public double extraLatitude = Double.NaN;
-	public double extraLongitude = Double.NaN;
 	public String extraFlightCategory = "";
 
 	public String rawTextHighlight;
-	public boolean found;
 
 	public class VLMetarCloud
 	{
@@ -117,8 +113,10 @@ public class MMetar
 	{
 		observationTime = _observationTime;
 		rawText = _raw;
-		rawTextHighlight = rawText;
+		rawTextHighlight = "<html>" + rawText + "</html>";
 		stationId = _stationId;
+
+		clouds = new ArrayList<MMetar.VLMetarCloud>();
 	}
 
 	public MMetar(LocalDateTime _observationTime, String _raw)
@@ -126,22 +124,21 @@ public class MMetar
 		observationTime = _observationTime;
 		rawText = _raw;
 		rawTextHighlight = "<html>" + rawText + "</html>";
-		clouds = new ArrayList<MMetar.VLMetarCloud>();
 
-		decode();
+		clouds = new ArrayList<MMetar.VLMetarCloud>();
 	}
 
-	public MMetar(String _fields, String _values)
+	public MMetar(String[] _fields, String _values)
 	{
 		String[] values = _values.split(",");
 
 		rawText = values[0];
+		rawTextHighlight = "<html>" + rawText + "</html>";
 		stationId = values[1];
 		observationTime = LocalDateTime.parse(values[2].substring(0, values[2].length() - 1));
-		extraLatitude = Double.parseDouble(values[3]);
-		extraLongitude = Double.parseDouble(values[4]);
-		extraElevationFt = (int) Math.round(metersToFeet(Integer.parseInt(values[43])));
 		extraFlightCategory = values[30];
+
+		clouds = new ArrayList<MMetar.VLMetarCloud>();
 	}
 
 	public String cloudToString()
@@ -169,26 +166,27 @@ public class MMetar
 
 	public String write()
 	{
-		StringBuffer buffer = new StringBuffer(observationTime.toString() + ",");
+		StringBuffer buffer = new StringBuffer(observationTime.toString());
+		buffer.append(",");
 		buffer.append(rawText);
 		return buffer.toString();
 	}
 
-	private void replace(String _field)
+	private void highLight(String _field)
 	{
 		rawTextHighlight = rawTextHighlight.replace(_field, "<b>" + _field + "</b>");
 	}
 
-	private void decode()
+	public void decode()
 	{
 		String[] items = rawText.split(" ");
 
 		stationId = items[0];
-		replace(stationId);
+		highLight(stationId);
 
 		String time = items[1];
 		if (time.endsWith("Z"))
-			replace(time);
+			highLight(time);
 
 		decodeAltimeter(items);
 		decodeTemperature(items);
@@ -204,19 +202,19 @@ public class MMetar
 	private void decodeNoSignal()
 	{
 		noSignal = rawText.contains("NOSIG");
-		replace("NOSIG");
+		highLight("NOSIG");
 	}
 
 	private void decodeAuto()
 	{
 		auto = rawText.contains("AUTO");
-		replace("AUTO");
+		highLight("AUTO");
 	}
 
 	private void decodeCorrection()
 	{
 		correction = rawText.contains("COR");
-		replace("COR");
+		highLight("COR");
 	}
 
 	private void decodeWind(String[] _items)
@@ -235,7 +233,7 @@ public class MMetar
 					String to = _items[i].substring(p + 1);
 					windToDegree = Integer.parseInt(to);
 				}
-				replace(_items[i]);
+				highLight(_items[i]);
 				break;
 			}
 		}
@@ -265,7 +263,7 @@ public class MMetar
 					if (speedUnit.equals("MPS"))
 						windGustKt = mpsToKnots(windGustKt);
 				}
-				replace(_items[i]);
+				highLight(_items[i]);
 				break;
 			}
 		}
@@ -303,7 +301,7 @@ public class MMetar
 			if (rawVisibilitySM != null)
 			{
 				visibilitySM = Math.round(10.0 * parseFractionalMiles(rawVisibilitySM)) / 10.0;
-				replace(rawVisibilitySM + "SM");
+				highLight(rawVisibilitySM + "SM");
 			}
 			else
 			{
@@ -312,7 +310,7 @@ public class MMetar
 				{
 					visibilitySM = Integer.parseInt(rawVisibility);
 					visibilitySM = Math.round(10.0 * metersToSM(visibilitySM)) / 10.0;
-					replace(rawVisibility);
+					highLight(rawVisibility);
 				}
 			}
 			return;
@@ -345,7 +343,7 @@ public class MMetar
 					{
 					}
 
-				replace(_items[i]);
+				highLight(_items[i]);
 				return;
 			}
 		}
@@ -371,7 +369,7 @@ public class MMetar
 					altimeterInHg = Integer.parseInt(rawAltimeter) / 100.0;
 					altimeterHpa = inHgToHPa(altimeterInHg);
 				}
-				replace(_items[i]);
+				highLight(_items[i]);
 				return;
 			}
 		}
@@ -394,7 +392,7 @@ public class MMetar
 					cloud.cover += " " + type;
 				cloud.baseFeet = altitude == null ? -1 : Integer.parseInt(altitude) * 100;
 				clouds.add(cloud);
-				replace(_items[i]);
+				highLight(_items[i]);
 			}
 		}
 
@@ -444,7 +442,7 @@ public class MMetar
 					intensity = "";
 
 				weather += intensity + descriptor + phenomenon + ", ";
-				replace(_items[i]);
+				highLight(_items[i]);
 			}
 		}
 
@@ -462,7 +460,7 @@ public class MMetar
 		return _meters * 0.000621371;
 	}
 
-	private double metersToFeet(double _meters)
+	static public double metersToFeet(double _meters)
 	{
 		return _meters * 3.28084;
 	}

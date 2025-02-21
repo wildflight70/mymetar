@@ -13,7 +13,8 @@ import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JScrollPane;
 
-import data.MLoadFTP;
+import data.MLoadNOAAAPI;
+import data.MLoadNOAAFTP;
 import data.MMetar;
 import util.MTableColumnAdjuster;
 
@@ -92,11 +93,18 @@ public class MMainWindow extends JFrame
 
 	private void doLoad()
 	{
-		MLoadFTP load = new MLoadFTP();
-		load.downloadThread();
-		ArrayList<MMetar> metars = load.loadAllThread();
-		load.write(metars, MLoadFTP.LOCAL_DIR + MLoadFTP.METARS_FILE);
+		// FTP
+		MLoadNOAAFTP loadFTP = new MLoadNOAAFTP();
+		loadFTP.download();
+		ArrayList<MMetar> metars = loadFTP.loadAll();
+		loadFTP.write(metars);
 
+		// API
+		MLoadNOAAAPI loadAPI = new MLoadNOAAAPI();
+		metars = loadAPI.downloadAllCSV();
+		loadAPI.write(metars);
+
+		// Update table
 		model.resetColumn();
 		model.load();
 		model.fireTableDataChanged();
