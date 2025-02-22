@@ -26,9 +26,8 @@ import javax.swing.table.TableColumnModel;
 import org.tinylog.Logger;
 
 import data.MAirport;
-import data.MNOAAAPI;
 import data.MMetar;
-import main.MModel.MColumn;
+import data.MNOAAAPI;
 import util.MColor;
 
 @SuppressWarnings("serial")
@@ -114,7 +113,7 @@ public class MTable extends JTable
 				{
 					int row = getSelectedRow();
 					if (row >= 0 && row < getRowCount())
-						MBottom.instance.update(model.airports.get(row));
+						MBottom.instance.update(model.visibleAirports.get(row));
 				}
 			}
 		});
@@ -195,7 +194,7 @@ public class MTable extends JTable
 
 		((JLabel) c).setHorizontalAlignment(column.alignment);
 
-		MAirport airport = model.airports.get(row);
+		MAirport airport = model.visibleAirports.get(row);
 		c.setForeground(airport.found ? FOUND_COLOR : Color.BLACK);
 
 		return c;
@@ -219,16 +218,16 @@ public class MTable extends JTable
 			for (int i = 0; i < findRows.size(); i++)
 			{
 				int row = findRows.get(i);
-				MAirport airport = model.airports.get(row);
+				MAirport airport = model.visibleAirports.get(row);
 				airport.found = false;
 				model.fireTableRowsUpdated(row, row);
 			}
 			findRows.clear();
 
 			if (!_text.isEmpty())
-				for (int i = 0; i < model.airports.size(); i++)
+				for (int i = 0; i < model.visibleAirports.size(); i++)
 				{
-					MAirport airport = model.airports.get(i);
+					MAirport airport = model.visibleAirports.get(i);
 					if (airport.stationId.contains(_text))
 					{
 						findRows.add(i);
@@ -236,7 +235,7 @@ public class MTable extends JTable
 						model.fireTableRowsUpdated(i, i);
 					}
 				}
-			MTop.instance.update(getRowCount(), findRows.size());
+			updateTop();
 		}
 
 		if (findRows.size() > 0)
@@ -250,7 +249,7 @@ public class MTable extends JTable
 
 	private void doOpenGoogleMaps()
 	{
-		MAirport airport = model.airports.get(getSelectedRow());
+		MAirport airport = model.visibleAirports.get(getSelectedRow());
 		String url = "https://www.google.com/maps?q=" + airport.latitude + "," + airport.longitude;
 		if (Desktop.isDesktopSupported())
 		{
@@ -269,7 +268,7 @@ public class MTable extends JTable
 	{
 		int selectedRow = getSelectedRow();
 
-		MAirport selectedAirport = model.airports.get(selectedRow);
+		MAirport selectedAirport = model.visibleAirports.get(selectedRow);
 		if (selectedAirport.metar != null)
 		{
 			MNOAAAPI load = new MNOAAAPI();
@@ -281,5 +280,17 @@ public class MTable extends JTable
 				model.fireTableRowsUpdated(selectedRow, selectedRow);
 			}
 		}
+	}
+
+	public void updateVisible(boolean _showOnlyAirportsWithMetar)
+	{
+		model.showOnlyAirportsWithMetar = _showOnlyAirportsWithMetar;
+		model.updateVisible();
+		model.fireTableDataChanged();
+	}
+
+	public void updateTop()
+	{
+		MTop.instance.update(model.airports.size(), model.visibleAirports.size(), findRows.size());
 	}
 }

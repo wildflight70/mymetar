@@ -4,17 +4,22 @@ import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 
+import javax.swing.JCheckBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
+import javax.swing.SwingConstants;
 
 @SuppressWarnings("serial")
 public class MTop extends JPanel
 {
 	private JLabel labelTotalValue;
+	private JLabel labelVisibleValue;
 	private JLabel labelFoundValue;
 
 	private MTable table;
@@ -35,15 +40,22 @@ public class MTop extends JPanel
 		GridBagConstraints c = new GridBagConstraints();
 		c.insets = new Insets(2, 2, 2, 2);
 
+		JCheckBox checkShowOnlyMetars = new JCheckBox("Show only airports with METAR");
+		checkShowOnlyMetars.setHorizontalTextPosition(SwingConstants.LEFT);
+		c.gridx = 0;
+		c.gridy = 0;
+		c.anchor = GridBagConstraints.LINE_START;
+		add(checkShowOnlyMetars, c);
+
 		// Find
 		JLabel labelFind = new JLabel("Find");
-		c.gridx = 0;
+		c.gridx = 1;
 		c.gridy = 0;
 		c.anchor = GridBagConstraints.LINE_END;
 		add(labelFind, c);
 
 		JTextField textFind = new JTextField(10);
-		c.gridx = 1;
+		c.gridx = 2;
 		c.gridy = 0;
 		c.anchor = GridBagConstraints.LINE_START;
 		add(textFind, c);
@@ -62,19 +74,43 @@ public class MTop extends JPanel
 		c.anchor = GridBagConstraints.LINE_START;
 		add(labelTotalValue, c);
 
+		// Visible
+		JLabel labelVisible = new JLabel("Visible");
+		c.gridx = 2;
+		c.gridy = 1;
+		c.anchor = GridBagConstraints.LINE_END;
+		add(labelVisible, c);
+
+		labelVisibleValue = new JLabel("0");
+		labelVisibleValue.setFont(boldFont);
+		c.gridx = 3;
+		c.gridy = 1;
+		c.anchor = GridBagConstraints.LINE_START;
+		add(labelVisibleValue, c);
+
 		// Found
 		JLabel labelFound = new JLabel("Found");
-		c.gridx = 2;
+		c.gridx = 4;
 		c.gridy = 1;
 		c.anchor = GridBagConstraints.LINE_END;
 		add(labelFound, c);
 
 		labelFoundValue = new JLabel("0");
 		labelFoundValue.setFont(boldFont);
-		c.gridx = 3;
+		c.gridx = 5;
 		c.gridy = 1;
 		c.anchor = GridBagConstraints.LINE_START;
 		add(labelFoundValue, c);
+
+		checkShowOnlyMetars.addActionListener(new ActionListener()
+		{
+			@Override
+			public void actionPerformed(ActionEvent e)
+			{
+				table.updateVisible(checkShowOnlyMetars.isSelected());
+				table.updateTop();
+			}
+		});
 
 		textFind.addKeyListener(new KeyAdapter()
 		{
@@ -87,9 +123,10 @@ public class MTop extends JPanel
 		});
 	}
 
-	public void update(int _total, int _found)
+	public void update(int _total, int _visible, int _found)
 	{
 		labelTotalValue.setText(_total + "");
+		labelVisibleValue.setText(_visible + "");
 		labelFoundValue.setText(_found + "");
 	}
 }

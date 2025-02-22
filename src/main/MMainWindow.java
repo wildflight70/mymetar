@@ -5,7 +5,6 @@ import java.awt.Dimension;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.ArrayList;
 
 import javax.swing.JFrame;
 import javax.swing.JMenu;
@@ -13,7 +12,6 @@ import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JScrollPane;
 
-import data.MMetar;
 import data.MNOAAAPI;
 import data.MNOAAFTP;
 import data.MOurAirports;
@@ -49,7 +47,7 @@ public class MMainWindow extends JFrame
 		JScrollPane scrollPane = new JScrollPane(table);
 
 		MTop.instance.setTable(table);
-		MTop.instance.update(table.getRowCount(), 0);
+		table.updateTop();
 
 		table.selectRow(0);
 
@@ -113,6 +111,6 @@ public class MMainWindow extends JFrame
 		model.fireTableDataChanged();
 		new MTableColumnAdjuster(table).adjustColumns();
 		table.selectRow(0);
-		MTop.instance.update(table.getRowCount(), 0);
+		table.updateTop();
 	}
 }

@@ -24,34 +24,18 @@ import data.MXPlaneAirport;
 public class MModel extends AbstractTableModel
 {
 	public ArrayList<MAirport> airports;
+	public ArrayList<MAirport> visibleAirports;
 
-	private interface MColumnValue
+	interface MColumnValue
 	{
 		public Object get(MAirport _airport);
-	}
-
-	public static class MColumn
-	{
-		public String name;
-		public boolean extra;
-		public int alignment; // SwingConstants.LEFT, SwingConstants.RIGHT, SwingConstants.CENTER;
-		public Comparator<MAirport> comparator;
-		public MColumnValue value;
-
-		public MColumn(String _name, boolean _extra, int _alignment, Comparator<MAirport> _comparator, MColumnValue _value)
-		{
-			name = _name;
-			extra = _extra;
-			alignment = _alignment;
-			comparator = _comparator;
-			value = _value;
-		}
 	}
 
 	public HashMap<Integer, MColumn> columns;
 
 	public int sortedColumn;
 	public boolean sortedAsc;
+	public boolean showOnlyAirportsWithMetar;
 
 	private DecimalFormat numberFormatDecimal0;
 	private DecimalFormat numberFormatDecimal2;
@@ -64,6 +48,8 @@ public class MModel extends AbstractTableModel
 
 		numberFormatDecimal0 = new DecimalFormat("###,##0", otherSymbols);
 		numberFormatDecimal2 = new DecimalFormat("###,##0.00", otherSymbols);
+
+		visibleAirports = new ArrayList<MAirport>();
 
 		initColumns();
 		load();
@@ -442,7 +428,7 @@ public class MModel extends AbstractTableModel
 	@Override
 	public int getRowCount()
 	{
-		return airports.size();
+		return visibleAirports.size();
 	}
 
 	@Override
@@ -460,7 +446,7 @@ public class MModel extends AbstractTableModel
 	@Override
 	public Object getValueAt(int rowIndex, int columnIndex)
 	{
-		MAirport airport = airports.get(rowIndex);
+		MAirport airport = visibleAirports.get(rowIndex);
 		return columns.get(columnIndex).value.get(airport);
 	}
 
@@ -486,7 +472,7 @@ public class MModel extends AbstractTableModel
 		HashMap<String, MXPlaneAirport> xPlaneMap = new MXPlane().load();
 		HashMap<String, MMetar> noaaApiMetars = new MNOAAAPI().load();
 		ArrayList<MMetar> noaaFtpMetars = new MNOAAFTP().load();
-		
+
 		for (MMetar metar : noaaFtpMetars)
 		{
 			MAirport airport = get(metar.stationId);
@@ -500,6 +486,8 @@ public class MModel extends AbstractTableModel
 			if (apiMetar != null)
 				metar.extraFlightCategory = apiMetar.extraFlightCategory;
 		}
+
+		updateVisible();
 
 		sortedColumn = 1;
 		sortedAsc = true;
@@ -524,6 +512,20 @@ public class MModel extends AbstractTableModel
 	{
 		columns.get(sortedColumn).name += sortedAsc ? " +" : " -";
 
-		Collections.sort(airports, columns.get(sortedColumn).comparator);
+		Collections.sort(visibleAirports, columns.get(sortedColumn).comparator);
+	}
+
+	public void updateVisible()
+	{
+		visibleAirports.clear();
+
+		if (showOnlyAirportsWithMetar)
+		{
+			for (MAirport airport : airports)
+				if (airport.metar != null)
+					visibleAirports.add(airport);
+		}
+		else
+			visibleAirports.addAll(airports);
 	}
 }
