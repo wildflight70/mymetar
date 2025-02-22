@@ -13,10 +13,10 @@ import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JScrollPane;
 
+import data.MMetar;
 import data.MNOAAAPI;
 import data.MNOAAFTP;
 import data.MOurAirports;
-import data.MMetar;
 import util.MTableColumnAdjuster;
 
 @SuppressWarnings("serial")
@@ -97,14 +97,11 @@ public class MMainWindow extends JFrame
 		// NOAA FTP
 		MNOAAFTP noaaFTP = new MNOAAFTP();
 		noaaFTP.download();
-		ArrayList<MMetar> metars = noaaFTP.load();
-		noaaFTP.write(metars);
 
 		// NOAA API
 		MNOAAAPI noaaAPI = new MNOAAAPI();
-		metars = noaaAPI.downloadAllCSV();
-		noaaAPI.write(metars);
-		
+		noaaAPI.downloadAll();
+
 		// OurAirports
 		MOurAirports ourAirports = new MOurAirports();
 		ourAirports.downloadAirports();

@@ -91,6 +91,9 @@ public class MNOAAFTP
 
 		executor.shutdown();
 
+		ArrayList<MMetar> metars = read();
+		write(metars);
+
 		Logger.debug("download end");
 
 		return ok;
@@ -126,9 +129,9 @@ public class MNOAAFTP
 		}
 	}
 
-	public ArrayList<MMetar> load()
+	private ArrayList<MMetar> read()
 	{
-		Logger.debug("load begin");
+		Logger.debug("read begin");
 
 		int processors = Runtime.getRuntime().availableProcessors();
 
@@ -138,7 +141,7 @@ public class MNOAAFTP
 		File directory = new File(LOCAL_DIR);
 		File[] textFiles = directory.listFiles((dir, name) -> name.endsWith(".TXT"));
 		for (File file : textFiles)
-			futures.add(executor.submit(new TaskLoad(file.toString())));
+			futures.add(executor.submit(new TaskRead(file.toString())));
 
 		HashMap<String, MMetar> metarsMap = new HashMap<String, MMetar>();
 
@@ -166,27 +169,27 @@ public class MNOAAFTP
 			metars.add(metar);
 		});
 
-		Logger.debug("load end");
+		Logger.debug("read end");
 
 		return metars;
 	}
 
-	private class TaskLoad implements Callable<ArrayList<MMetar>>
+	private class TaskRead implements Callable<ArrayList<MMetar>>
 	{
 		private String file;
 
-		public TaskLoad(String _file)
+		public TaskRead(String _file)
 		{
 			file = _file;
 		}
 
 		public ArrayList<MMetar> call() throws Exception
 		{
-			return load(file);
+			return read(file);
 		}
 	}
 
-	private ArrayList<MMetar> load(String _file)
+	private ArrayList<MMetar> read(String _file)
 	{
 		HashMap<String, MMetar> metarsMap = new HashMap<String, MMetar>();
 
@@ -245,7 +248,7 @@ public class MNOAAFTP
 		return metars;
 	}
 
-	public boolean write(ArrayList<MMetar> _metars)
+	private boolean write(ArrayList<MMetar> _metars)
 	{
 		boolean ok = true;
 
@@ -265,7 +268,7 @@ public class MNOAAFTP
 		return ok;
 	}
 
-	public ArrayList<MMetar> read()
+	public ArrayList<MMetar> load()
 	{
 		ArrayList<MMetar> metars = new ArrayList<MMetar>();
 

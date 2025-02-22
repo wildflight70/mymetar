@@ -273,7 +273,7 @@ public class MTable extends JTable
 		if (selectedAirport.metar != null)
 		{
 			MNOAAAPI load = new MNOAAAPI();
-			MMetar metar = load.downloadCSV(selectedAirport.stationId);
+			MMetar metar = load.download(selectedAirport.stationId);
 			if (metar != null)
 			{
 				selectedAirport.metar.extraFlightCategory = metar.extraFlightCategory;

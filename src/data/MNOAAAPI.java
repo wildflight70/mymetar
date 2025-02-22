@@ -26,7 +26,7 @@ public class MNOAAAPI
 	public static final String LOCAL_DIR = "temp/";
 	public static final String METARS_FILE = "noaa_api_metars.csv";
 
-	public MMetar downloadCSV(String _stationId)
+	public MMetar download(String _stationId)
 	{
 		final String NOAA_METAR_CSV_URL = "https://aviationweather.gov/api/data/dataserver?requestType=retrieve&dataSource=metars&stationString="
 				+ _stationId + "&hoursBeforeNow=2&format=csv&mostRecentForEachStation=constraint";
@@ -63,7 +63,7 @@ public class MNOAAAPI
 		return metar;
 	}
 
-	public ArrayList<MMetar> downloadCSV(int _latitudeFrom, int _latitudeTo, int _longitudeFrom, int _longitudeTo)
+	public ArrayList<MMetar> download(int _latitudeFrom, int _latitudeTo, int _longitudeFrom, int _longitudeTo)
 	{
 		final String NOAA_METAR_CSV_URL = "https://aviationweather.gov/api/data/dataserver?requestType=retrieve&dataSource=metars&hoursBeforeNow=2&format=csv&mostRecentForEachStation=constraint&boundingBox="
 				+ _latitudeFrom + "%2C" + _longitudeFrom + "%2C" + _latitudeTo + "%2C" + _longitudeTo;
@@ -103,9 +103,11 @@ public class MNOAAAPI
 		return metars;
 	}
 
-	public ArrayList<MMetar> downloadAllCSV()
+	public boolean downloadAll()
 	{
-		Logger.debug("loadAllCSV begin");
+		Logger.debug("downloadAll begin");
+
+		boolean ok = true;
 
 		ArrayList<MMetar> allMetars = new ArrayList<MMetar>();
 
@@ -130,13 +132,16 @@ public class MNOAAAPI
 			catch (Exception e)
 			{
 				Logger.error(e);
+				ok = false;
 			}
 
 		executor.shutdown();
 
-		Logger.debug("loadAllCSV end");
+		write(allMetars);
 
-		return allMetars;
+		Logger.debug("downloadAll end");
+
+		return ok;
 	}
 
 	private class TaskLoad implements Callable<ArrayList<MMetar>>
@@ -156,11 +161,11 @@ public class MNOAAAPI
 
 		public ArrayList<MMetar> call() throws Exception
 		{
-			return downloadCSV(latitudeFrom, latitudeTo, longitudeFrom, longitudeTo);
+			return download(latitudeFrom, latitudeTo, longitudeFrom, longitudeTo);
 		}
 	}
 
-	public boolean write(ArrayList<MMetar> _metars)
+	private boolean write(ArrayList<MMetar> _metars)
 	{
 		boolean ok = true;
 
@@ -231,7 +236,6 @@ public class MNOAAAPI
 //		for (MMetar metar : metars)
 //			System.out.println(metar.rawText);
 
-		ArrayList<MMetar> metars = load.downloadAllCSV();
-		System.out.println(metars.size());
+		load.downloadAll();
 	}
 }

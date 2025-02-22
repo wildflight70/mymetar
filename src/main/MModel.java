@@ -485,7 +485,7 @@ public class MModel extends AbstractTableModel
 		airports = new MOurAirports().loadAirports();
 		HashMap<String, MXPlaneAirport> xPlaneMap = new MXPlane().load();
 		HashMap<String, MMetar> noaaApiMetars = new MNOAAAPI().load();
-		ArrayList<MMetar> noaaFtpMetars = new MNOAAFTP().read();
+		ArrayList<MMetar> noaaFtpMetars = new MNOAAFTP().load();
 		
 		for (MMetar metar : noaaFtpMetars)
 		{
