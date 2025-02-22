@@ -25,7 +25,7 @@ public class MMainWindow extends JFrame
 
 	public MMainWindow()
 	{
-		super("METAR");
+		super("myMetar");
 
 		setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
 

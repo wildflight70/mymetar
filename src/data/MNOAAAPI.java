@@ -23,8 +23,8 @@ import org.tinylog.Logger;
 
 public class MNOAAAPI
 {
-	public static final String LOCAL_DIR = "temp/";
-	public static final String METARS_FILE = "noaa_api_metars.csv";
+	private static final String LOCAL_DIR = "temp/";
+	private static final String METARS_FILE = "noaa_api_metars.csv";
 
 	public MMetar download(String _stationId)
 	{

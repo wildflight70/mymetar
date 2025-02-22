@@ -23,11 +23,11 @@ import org.tinylog.Logger;
 
 public class MOurAirports
 {
-	private final String AIRPORTS_URL = "https://davidmegginson.github.io/ourairports-data/airports.csv";
-	private final String AIRPORTS_FILE = "temp/ourairports_airports.csv";
+	private static final String AIRPORTS_URL = "https://davidmegginson.github.io/ourairports-data/airports.csv";
+	private static final String AIRPORTS_FILE = "temp/ourairports_airports.csv";
 
-	private final String COUNTRIES_URL = "https://davidmegginson.github.io/ourairports-data/countries.csv";
-	private final String COUNTRIES_FILE = "temp/ourairports_countries.csv";
+	private static final String COUNTRIES_URL = "https://davidmegginson.github.io/ourairports-data/countries.csv";
+	private static final String COUNTRIES_FILE = "temp/ourairports_countries.csv";
 
 	private String[] split(String _line)
 	{
