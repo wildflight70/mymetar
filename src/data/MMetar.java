@@ -8,6 +8,8 @@ import java.util.HashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import util.MFormat;
+
 public class MMetar
 {
 	private static final Pattern PATTERN_WIND = Pattern.compile("(?:(VRB|\\d{3}))(\\d{2})(?:G(\\d{2}))?(KT|MPS)");
@@ -155,7 +157,7 @@ public class MMetar
 			if (cloud.baseFeet >= 0)
 			{
 				buffer.append(" at ");
-				buffer.append(cloud.baseFeet);
+				buffer.append(MFormat.instance.numberFormatDecimal0.format(cloud.baseFeet));
 			}
 
 			if (i < clouds.size() - 1)

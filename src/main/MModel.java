@@ -1,7 +1,5 @@
 package main;
 
-import java.text.DecimalFormat;
-import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -19,6 +17,7 @@ import data.MNOAAFTP;
 import data.MOurAirports;
 import data.MXPlane;
 import data.MXPlaneAirport;
+import util.MFormat;
 
 @SuppressWarnings("serial")
 public class MModel extends AbstractTableModel
@@ -37,18 +36,8 @@ public class MModel extends AbstractTableModel
 	public boolean sortedAsc;
 	public boolean showOnlyAirportsWithMetar;
 
-	private DecimalFormat numberFormatDecimal0;
-	private DecimalFormat numberFormatDecimal2;
-
 	public MModel()
 	{
-		DecimalFormatSymbols otherSymbols = new DecimalFormatSymbols();
-		otherSymbols.setDecimalSeparator('.');
-		otherSymbols.setGroupingSeparator(' ');
-
-		numberFormatDecimal0 = new DecimalFormat("###,##0", otherSymbols);
-		numberFormatDecimal2 = new DecimalFormat("###,##0.00", otherSymbols);
-
 		visibleAirports = new ArrayList<MAirport>();
 
 		initColumns();
@@ -120,7 +109,8 @@ public class MModel extends AbstractTableModel
 			@Override
 			public Object get(MAirport _airport)
 			{
-				return _airport.elevationFt != Integer.MIN_VALUE ? _airport.elevationFt : null;
+				return _airport.elevationFt == Integer.MIN_VALUE ? null
+						: MFormat.instance.numberFormatDecimal0.format(_airport.elevationFt);
 			}
 		}));
 
@@ -139,7 +129,7 @@ public class MModel extends AbstractTableModel
 			@Override
 			public Object get(MAirport _airport)
 			{
-				return Double.isNaN(_airport.latitude) ? null : _airport.latitude;
+				return Double.isNaN(_airport.latitude) ? null : MFormat.instance.numberFormatDecimal5.format(_airport.latitude);
 			}
 		}));
 
@@ -158,7 +148,8 @@ public class MModel extends AbstractTableModel
 			@Override
 			public Object get(MAirport _airport)
 			{
-				return Double.isNaN(_airport.longitude) ? null : _airport.longitude;
+				return Double.isNaN(_airport.longitude) ? null
+						: MFormat.instance.numberFormatDecimal5.format(_airport.longitude);
 			}
 		}));
 
@@ -230,8 +221,8 @@ public class MModel extends AbstractTableModel
 				if (_airport.metar == null || _airport.metar.altimeterInHg == 0)
 					return null;
 				else
-					return numberFormatDecimal2.format(_airport.metar.altimeterInHg) + " / "
-							+ numberFormatDecimal0.format(_airport.metar.altimeterHpa);
+					return MFormat.instance.numberFormatDecimal2.format(_airport.metar.altimeterInHg) + " / "
+							+ MFormat.instance.numberFormatDecimal0.format(_airport.metar.altimeterHpa);
 			}
 		}));
 
