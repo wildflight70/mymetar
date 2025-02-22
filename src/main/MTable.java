@@ -26,9 +26,9 @@ import javax.swing.table.TableColumnModel;
 import org.tinylog.Logger;
 
 import data.MAirport;
-import data.MLoadNOAAAPI;
+import data.MNOAAAPI;
 import data.MMetar;
-import main.MModel.VLColumn;
+import main.MModel.MColumn;
 import util.MColor;
 
 @SuppressWarnings("serial")
@@ -189,7 +189,7 @@ public class MTable extends JTable
 			else
 				c.setBackground(ROW_BACKGROUND_COLOR);
 
-		VLColumn column = model.columns.get(col);
+		MColumn column = model.columns.get(col);
 		if (column.extra)
 			c.setBackground(MColor.blend(c.getBackground(), EXTRA_COLOR));
 
@@ -272,7 +272,7 @@ public class MTable extends JTable
 		MAirport selectedAirport = model.airports.get(selectedRow);
 		if (selectedAirport.metar != null)
 		{
-			MLoadNOAAAPI load = new MLoadNOAAAPI();
+			MNOAAAPI load = new MNOAAAPI();
 			MMetar metar = load.downloadCSV(selectedAirport.stationId);
 			if (metar != null)
 			{

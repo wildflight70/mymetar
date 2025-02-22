@@ -21,7 +21,7 @@ import java.util.concurrent.Future;
 
 import org.tinylog.Logger;
 
-public class MLoadNOAAAPI
+public class MNOAAAPI
 {
 	public static final String LOCAL_DIR = "temp/";
 	public static final String METARS_FILE = "noaa_api_metars.csv";
@@ -223,7 +223,7 @@ public class MLoadNOAAAPI
 
 	public static void main(String[] args)
 	{
-		MLoadNOAAAPI load = new MLoadNOAAAPI();
+		MNOAAAPI load = new MNOAAAPI();
 //		MMetar metarStation = load.loadCSV("LFPG");
 
 //		ArrayList<MMetar> metars = load.loadCSV(40, 50, 0, 10);

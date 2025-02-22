@@ -35,7 +35,7 @@
 		<jar destfile="${dist.dir}/mymetar.jar" basedir="${build.dir}">
 			<manifest>
 				<attribute name="Main-Class" value="${main.class}" />
-				<attribute name="Class-Path" value=". commons-net-3.11.1.jar tinylog-api-2.7.0.jar tinylog-impl-2.7.0.jar" />
+				<attribute name="Class-Path" value=". commons-codec-1.18.0.jar commons-csv-1.13.0.jar commons-io-2.18.0.jar commons-net-3.11.1.jar tinylog-api-2.7.0.jar tinylog-impl-2.7.0.jar" />
 			</manifest>
 		</jar>
 	</target>

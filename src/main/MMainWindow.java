@@ -13,8 +13,9 @@ import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JScrollPane;
 
-import data.MLoadNOAAAPI;
-import data.MLoadNOAAFTP;
+import data.MNOAAAPI;
+import data.MNOAAFTP;
+import data.MOurAirports;
 import data.MMetar;
 import util.MTableColumnAdjuster;
 
@@ -66,13 +67,13 @@ public class MMainWindow extends JFrame
 		JMenu menuFile = new JMenu("File");
 		menuBar.add(menuFile);
 
-		// Menu File > Load FTP
-		JMenuItem menuFileLoad = new JMenuItem("Load NOAA FTP");
+		// Menu File > Download
+		JMenuItem menuFileLoad = new JMenuItem("Download");
 		menuFileLoad.addActionListener(new ActionListener()
 		{
 			public void actionPerformed(ActionEvent evt)
 			{
-				doLoad();
+				doDownload();
 			}
 		});
 		menuFile.add(menuFileLoad);
@@ -91,18 +92,23 @@ public class MMainWindow extends JFrame
 		setJMenuBar(menuBar);
 	}
 
-	private void doLoad()
+	private void doDownload()
 	{
-		// FTP
-		MLoadNOAAFTP loadFTP = new MLoadNOAAFTP();
-		loadFTP.download();
-		ArrayList<MMetar> metars = loadFTP.loadAll();
-		loadFTP.write(metars);
+		// NOAA FTP
+		MNOAAFTP noaaFTP = new MNOAAFTP();
+		noaaFTP.download();
+		ArrayList<MMetar> metars = noaaFTP.load();
+		noaaFTP.write(metars);
 
-		// API
-		MLoadNOAAAPI loadAPI = new MLoadNOAAAPI();
-		metars = loadAPI.downloadAllCSV();
-		loadAPI.write(metars);
+		// NOAA API
+		MNOAAAPI noaaAPI = new MNOAAAPI();
+		metars = noaaAPI.downloadAllCSV();
+		noaaAPI.write(metars);
+		
+		// OurAirports
+		MOurAirports ourAirports = new MOurAirports();
+		ourAirports.downloadAirports();
+		ourAirports.downloadCountries();
 
 		// Update table
 		model.resetColumn();

@@ -12,6 +12,8 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 
 import org.apache.commons.csv.CSVFormat;
@@ -33,14 +35,14 @@ public class MOurAirports
 
 		try
 		{
-			CSVFormat csvFormat = CSVFormat.DEFAULT.builder().setQuote('"').build();
+			CSVFormat csvFormat = CSVFormat.DEFAULT.builder().setQuote('"').get();
 			CSVParser parser = csvFormat.parse(new StringReader(_line));
 			for (CSVRecord r : parser)
 				fields.addAll(r.toList());
 		}
 		catch (IOException e)
 		{
-			e.printStackTrace();
+			Logger.error(e);
 		}
 
 		return fields.toArray(new String[0]);
@@ -161,7 +163,6 @@ public class MOurAirports
 				String line;
 				while ((line = reader.readLine()) != null)
 				{
-					System.out.println(line);
 					String[] items = line.split(";");
 					MAirport airport = new MAirport(items[0]);
 					airport.type = items[1];
@@ -182,6 +183,15 @@ public class MOurAirports
 			}
 		else
 			Logger.error(AIRPORTS_FILE + " does not exist");
+
+		Collections.sort(airports, new Comparator<MAirport>()
+		{
+			@Override
+			public int compare(MAirport o1, MAirport o2)
+			{
+				return o1.stationId.compareTo(o2.stationId);
+			}
+		});
 
 		return airports;
 	}

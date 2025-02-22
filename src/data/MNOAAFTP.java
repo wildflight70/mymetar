@@ -25,10 +25,10 @@ import org.tinylog.Logger;
 
 import util.MProperties;
 
-public class MLoadNOAAFTP
+public class MNOAAFTP
 {
 	public static final String LOCAL_DIR = "temp/";
-	public static final String METARS_FILE = "ftp_metars.csv";
+	public static final String METARS_FILE = "noaa_ftp_metars.csv";
 
 	private String server;
 	private int port;
@@ -126,9 +126,9 @@ public class MLoadNOAAFTP
 		}
 	}
 
-	public ArrayList<MMetar> loadAll()
+	public ArrayList<MMetar> load()
 	{
-		Logger.debug("loadAll begin");
+		Logger.debug("load begin");
 
 		int processors = Runtime.getRuntime().availableProcessors();
 
@@ -166,7 +166,7 @@ public class MLoadNOAAFTP
 			metars.add(metar);
 		});
 
-		Logger.debug("loadAll end");
+		Logger.debug("load end");
 
 		return metars;
 	}
@@ -263,5 +263,38 @@ public class MLoadNOAAFTP
 			ok = false;
 		}
 		return ok;
+	}
+
+	public ArrayList<MMetar> read()
+	{
+		ArrayList<MMetar> metars = new ArrayList<MMetar>();
+
+		String fileName = LOCAL_DIR + METARS_FILE;
+		if (new File(fileName).exists())
+		{
+			try (BufferedReader reader = new BufferedReader(new FileReader(fileName)))
+			{
+				String line;
+				while ((line = reader.readLine()) != null)
+					if (!line.isEmpty())
+					{
+						String[] items = line.split(",");
+
+						LocalDateTime observationTime = LocalDateTime.parse(items[0]);
+
+						MMetar metar = new MMetar(observationTime, items[1]);
+						metar.decode();
+						metars.add(metar);
+					}
+			}
+			catch (IOException e)
+			{
+				Logger.error(e);
+			}
+		}
+		else
+			Logger.error(fileName + " does not exist");
+
+		return metars;
 	}
 }
