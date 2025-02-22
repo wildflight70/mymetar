@@ -204,7 +204,7 @@ public class MNOAAAPI
 
 						LocalDateTime observationTime = LocalDateTime.parse(items[0]);
 						String rawText = items[1];
-						String flightCategory = items.length == 5 ? items[4] : "";
+						String flightCategory = items.length == 3 ? items[2] : "";
 
 						int p = rawText.indexOf(" ");
 						String stationId = rawText.substring(0, p);
