@@ -11,17 +11,17 @@ It uses the following libraries:
 - common-net (https://commons.apache.org)
 - common-csv (dependencies: common-io and common-codec)
 
-The build.xml file allows generating a distribution using Ant (https://ant.apache.org). The generated distribution is located in the dist folder and includes the launchers mymetar.cmd for Windows and mymetar.sh for Linux.
+The build.xml file allows generating a distribution using Ant (https://ant.apache.org). The generated distribution is located in the <code>dist</code> folder and includes the launchers <code>mymetar.cmd</code> for Windows and <code>mymetar.sh</code> for Linux.
 
-The mymetar.ini configuration file contains:
+The <code>mymetar.ini</code> configuration file contains:
 - The location of X-Plane
 - The NOAA server coordinates
 
-When running the application, a mymetar.log file is generated.
+When running the application, a <code>mymetar.log</code> file is generated.
 
-Downloading data generates a temp folder containing:
-- *.TXT: Raw NOAA files
-- noaa_ftp_metars.csv: Aggregation of raw NOAA files, keeping only the latest METARs
-- noaa_api_metars.csv: Latest METARs
-- ourairports_airports.csv: Airports
-- ourairports_countries.csv: Countries
+Downloading data generates a <code>temp</code> folder containing:
+- <code>*.TXT</code>: Raw NOAA files
+- <code>noaa_ftp_metars.csv</code>: Aggregation of raw NOAA files, keeping only the latest METARs
+- <code>noaa_api_metars.csv</code>: Latest METARs
+- <code>ourairports_airports.csv</code>: Airports
+- <code>ourairports_countries.csv</code>: Countries
