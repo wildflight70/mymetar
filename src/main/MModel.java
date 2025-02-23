@@ -25,7 +25,7 @@ import util.MFormat;
 @SuppressWarnings("serial")
 public class MModel extends AbstractTableModel
 {
-	public ArrayList<MAirport> airports;
+	private ArrayList<MAirport> airports;
 	public List<MAirport> visibleAirports;
 
 	interface MColumnValue
@@ -289,7 +289,39 @@ public class MModel extends AbstractTableModel
 			@Override
 			public Object get(MAirport _airport)
 			{
-				return (_airport.metar == null || _airport.metar.visibilitySM < 0) ? null : _airport.metar.visibilitySM;
+				if (_airport.metar == null || _airport.metar.visibilitySM < 0)
+					return null;
+				else
+					return _airport.metar.visibilityNonDirectionalVaration ? (_airport.metar.visibilitySM + " NDV")
+							: _airport.metar.visibilitySM;
+			}
+		}));
+
+		columns.put(col++, new MColumn("Visibility extra (SM)", false, SwingConstants.RIGHT, new Comparator<MAirport>()
+		{
+			@Override
+			public int compare(MAirport o1, MAirport o2)
+			{
+				int c;
+				if (o1.metar == null)
+					c = -1;
+				else if (o2.metar == null)
+					c = 1;
+				else
+					c = Double.compare(o1.metar.visibilitySMExtra, o2.metar.visibilitySMExtra);
+				if (!sortedAsc)
+					c = -c;
+				return c;
+			}
+		}, new MColumnValue()
+		{
+			@Override
+			public Object get(MAirport _airport)
+			{
+				if (_airport.metar == null || _airport.metar.visibilitySMExtra < 0)
+					return null;
+				else
+					return _airport.metar.visibilitySMExtra + (" " + _airport.metar.visibilityDirectionExtra).trim();
 			}
 		}));
 
@@ -481,7 +513,7 @@ public class MModel extends AbstractTableModel
 			{
 				airport.metar = metar;
 				airport.xPlane = xPlaneMap.containsKey(metar.stationId);
-				
+
 				totalMetars++;
 				if (metar.notDecoded)
 					totalMetarNotDecoded++;
@@ -518,6 +550,16 @@ public class MModel extends AbstractTableModel
 		visibleAirports = airports.stream().filter(airport -> !filterShowOnlyAirportsWithMetar || airport.metar != null)
 				.filter(airport -> filterCountry == null || airport.country.equals(filterCountry.code))
 				.collect(Collectors.toList());
+	}
+
+	public int getTotalAirports()
+	{
+		return airports.size();
+	}
+
+	public int getVisibleAirports()
+	{
+		return visibleAirports.size();
 	}
 
 	public int getTotalMetars()

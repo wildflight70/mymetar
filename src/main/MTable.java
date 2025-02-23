@@ -185,21 +185,26 @@ public class MTable extends JTable
 	{
 		Component c = super.prepareRenderer(renderer, row, col);
 
+		// Set background row color
 		if (!isCellSelected(row, col))
 			if (row % 2 == 0)
 				c.setBackground(getBackground());
 			else
 				c.setBackground(ROW_BACKGROUND_COLOR);
 
+		// Set background color to extra columns (not relative to metar)
 		MColumn column = model.columns.get(col);
 		if (column.extra)
 			c.setBackground(MColor.blend(c.getBackground(), EXTRA_COLOR));
 
+		// Set alignment
 		((JLabel) c).setHorizontalAlignment(column.alignment);
 
+		// Highlight search
 		MAirport airport = model.visibleAirports.get(row);
 		c.setForeground(airport.found ? FOUND_COLOR : Color.BLACK);
 
+		// Highlight not decoded metars
 		if (column.name.equals("Station id") || column.name.equals("Raw"))
 			if (airport.metar != null && airport.metar.notDecoded)
 				c.setBackground(MColor.blend(c.getBackground(), NOT_DECODED_COLOR));
@@ -207,6 +212,11 @@ public class MTable extends JTable
 		return c;
 	}
 
+	/**
+	 * Select a row and scroll table to it.
+	 * 
+	 * @param _row
+	 */
 	public void selectRow(int _row)
 	{
 		if (getRowCount() > 0 && _row < getRowCount())
@@ -216,6 +226,12 @@ public class MTable extends JTable
 		}
 	}
 
+	/**
+	 * Find all rows that match a text. Press ENTER to scroll to the next row.
+	 * Search applies to stationId.
+	 * 
+	 * @param _text
+	 */
 	public void find(String _text)
 	{
 		if (!_text.equals(findText))
@@ -293,7 +309,7 @@ public class MTable extends JTable
 
 	public void updateTop()
 	{
-		MTop.instance.update(model.airports.size(), model.visibleAirports.size(), findRows.size(), model.getTotalMetars(),
+		MTop.instance.update(model.getTotalAirports(), model.getVisibleAirports(), findRows.size(), model.getTotalMetars(),
 				model.getTotalMetarNotDecoded());
 	}
 }

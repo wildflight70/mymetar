@@ -14,11 +14,13 @@ public class MMetar
 {
 	private static final Pattern PATTERN_WIND = Pattern.compile("(?:(VRB|\\d{3}))(\\d{2})(?:G(\\d{2}))?(KT|MPS)");
 	private static final Pattern PATTERN_WIND_VARIABLE = Pattern.compile("\\d+V\\d+");
-	private static final Pattern PATTERN_VISIBILITY = Pattern.compile("\\b(\\d+\\s*\\d*/\\d+|\\d+)SM\\b|\\s(\\d{4})\\s");
+	private static final Pattern PATTERN_VISIBILITY = Pattern
+			.compile("\\s(\\d+\\s*\\d*/\\d+|\\d+)SM\\s|\\s(\\d{4})(NDV)?\\s");
+	private static final Pattern PATTERN_VISIBILITY_EXTRA = Pattern.compile("\\s(\\d{4})(S)\\s");
 	private static final Pattern PATTERN_TEMPERATURE = Pattern.compile("(M?\\d{2})/(M?\\d{0,2}$)");
 	private static final Pattern PATTERN_ALTIMETER = Pattern.compile("(A|Q)(\\d{4})");
 	private static final Pattern PATTERN_CLOUDS = Pattern
-			.compile("(CAVOK|CLR|SKC|NSC|NCD|FEW|SCT|BKN|OVC|VV)(\\d{2,3})?(CB|TCU)?");
+			.compile("(CAVOK|CLR|SKC|NSC|NSW|NCD|FEW|SCT|BKN|OVC|VV)(\\d{2,3})?(CB|TCU)?");
 	private static final Pattern PATTERN_WEATHER = Pattern
 			.compile("(-|\\+|VC|RE)?(MI|BC|DR|BL|SH|TS|FZ)?(VCSH|RA|DZ|SN|SG|IC|PL|GR|GS|FG|BR|HZ|FU|VA|DU|SA|SQ|FC|SS|DS)$");
 	private static final Pattern PATTERN_NOT_DECODE = Pattern.compile("(?<=^<html>|</b>)(.*?)(?=<b>|</html>$)");
@@ -34,6 +36,9 @@ public class MMetar
 	public boolean noSignal;
 	public boolean correction;
 	public double visibilitySM = -1.0;
+	public boolean visibilityNonDirectionalVaration;
+	public double visibilitySMExtra = -1.0;
+	public String visibilityDirectionExtra = "";
 	public int windDirectionDegree;
 	public int windSpeedKt;
 	public int windGustKt;
@@ -64,6 +69,7 @@ public class MMetar
 		covers.put("CLR", "Clear");
 		covers.put("SKC", "Clear");
 		covers.put("NSC", "No signifiant cloud");
+		covers.put("NSW", "No signifiant weather");
 		covers.put("NCD", "No cloud detected");
 		covers.put("FEW", "Few");
 		covers.put("SCT", "Scattered");
@@ -312,14 +318,30 @@ public class MMetar
 			else
 			{
 				String rawVisibility = matcher.group(2);
+				String rawVisibilityIndicator = matcher.group(3);
 				if (rawVisibility != null)
 				{
 					visibilitySM = Integer.parseInt(rawVisibility);
 					visibilitySM = Math.round(10.0 * metersToSM(visibilitySM)) / 10.0;
-					highLight(rawVisibility);
+					visibilityNonDirectionalVaration = rawVisibilityIndicator != null && rawVisibilityIndicator.equals("NDV");
+					highLight(rawVisibility + (rawVisibilityIndicator == null ? "" : rawVisibilityIndicator));
 				}
 			}
-			return;
+		}
+
+		matcher = PATTERN_VISIBILITY_EXTRA.matcher(rawText);
+		if (matcher.find())
+		{
+			String rawVisibility = matcher.group(1);
+			String rawVisibilityIndicator = matcher.group(2);
+			if (rawVisibility != null)
+			{
+				visibilitySMExtra = Integer.parseInt(rawVisibility);
+				visibilitySMExtra = Math.round(10.0 * metersToSM(visibilitySMExtra)) / 10.0;
+				if (rawVisibilityIndicator != null && rawVisibilityIndicator.equals("S"))
+					visibilityDirectionExtra = rawVisibilityIndicator;
+				highLight(rawVisibility + (rawVisibilityIndicator == null ? "" : rawVisibilityIndicator));
+			}
 		}
 	}
 
