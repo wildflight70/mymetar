@@ -25,7 +25,7 @@ public class MMainWindow extends JFrame
 
 	public MMainWindow()
 	{
-		super("METAR");
+		super("myMetar");
 
 		setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
 
@@ -106,7 +106,6 @@ public class MMainWindow extends JFrame
 		ourAirports.downloadCountries();
 
 		// Update table
-		model.resetColumn();
 		model.load();
 		model.fireTableDataChanged();
 		new MTableColumnAdjuster(table).adjustColumns();

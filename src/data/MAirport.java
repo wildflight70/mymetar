@@ -10,11 +10,11 @@ public class MAirport
 	public int elevationFt = Integer.MIN_VALUE;
 	public double latitude = Double.NaN;
 	public double longitude = Double.NaN;
-	
+
 	public boolean xPlane;
 
 	public MMetar metar;
-	
+
 	public boolean found;
 
 	public MAirport(String _stationId)

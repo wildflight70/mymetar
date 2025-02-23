@@ -27,8 +27,8 @@ import util.MProperties;
 
 public class MNOAAFTP
 {
-	public static final String LOCAL_DIR = "temp/";
-	public static final String METARS_FILE = "noaa_ftp_metars.csv";
+	private static final String LOCAL_DIR = "temp/";
+	private static final String METARS_FILE = "noaa_ftp_metars.csv";
 
 	private String server;
 	private int port;

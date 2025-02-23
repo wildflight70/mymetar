@@ -1,11 +1,11 @@
 package main;
 
-import java.text.DecimalFormat;
-import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import javax.swing.SwingConstants;
 import javax.swing.table.AbstractTableModel;
@@ -13,18 +13,20 @@ import javax.swing.table.AbstractTableModel;
 import org.tinylog.Logger;
 
 import data.MAirport;
+import data.MCountry;
 import data.MMetar;
 import data.MNOAAAPI;
 import data.MNOAAFTP;
 import data.MOurAirports;
 import data.MXPlane;
 import data.MXPlaneAirport;
+import util.MFormat;
 
 @SuppressWarnings("serial")
 public class MModel extends AbstractTableModel
 {
-	public ArrayList<MAirport> airports;
-	public ArrayList<MAirport> visibleAirports;
+	private ArrayList<MAirport> airports;
+	public List<MAirport> visibleAirports;
 
 	interface MColumnValue
 	{
@@ -35,20 +37,14 @@ public class MModel extends AbstractTableModel
 
 	public int sortedColumn;
 	public boolean sortedAsc;
-	public boolean showOnlyAirportsWithMetar;
+	public boolean filterShowOnlyAirportsWithMetar;
+	public MCountry filterCountry;
 
-	private DecimalFormat numberFormatDecimal0;
-	private DecimalFormat numberFormatDecimal2;
+	private int totalMetars;
+	private int totalMetarNotDecoded;
 
 	public MModel()
 	{
-		DecimalFormatSymbols otherSymbols = new DecimalFormatSymbols();
-		otherSymbols.setDecimalSeparator('.');
-		otherSymbols.setGroupingSeparator(' ');
-
-		numberFormatDecimal0 = new DecimalFormat("###,##0", otherSymbols);
-		numberFormatDecimal2 = new DecimalFormat("###,##0.00", otherSymbols);
-
 		visibleAirports = new ArrayList<MAirport>();
 
 		initColumns();
@@ -120,7 +116,8 @@ public class MModel extends AbstractTableModel
 			@Override
 			public Object get(MAirport _airport)
 			{
-				return _airport.elevationFt != Integer.MIN_VALUE ? _airport.elevationFt : null;
+				return _airport.elevationFt == Integer.MIN_VALUE ? null
+						: MFormat.instance.numberFormatDecimal0.format(_airport.elevationFt);
 			}
 		}));
 
@@ -139,7 +136,7 @@ public class MModel extends AbstractTableModel
 			@Override
 			public Object get(MAirport _airport)
 			{
-				return Double.isNaN(_airport.latitude) ? null : _airport.latitude;
+				return Double.isNaN(_airport.latitude) ? null : MFormat.instance.numberFormatDecimal5.format(_airport.latitude);
 			}
 		}));
 
@@ -158,7 +155,8 @@ public class MModel extends AbstractTableModel
 			@Override
 			public Object get(MAirport _airport)
 			{
-				return Double.isNaN(_airport.longitude) ? null : _airport.longitude;
+				return Double.isNaN(_airport.longitude) ? null
+						: MFormat.instance.numberFormatDecimal5.format(_airport.longitude);
 			}
 		}));
 
@@ -230,8 +228,8 @@ public class MModel extends AbstractTableModel
 				if (_airport.metar == null || _airport.metar.altimeterInHg == 0)
 					return null;
 				else
-					return numberFormatDecimal2.format(_airport.metar.altimeterInHg) + " / "
-							+ numberFormatDecimal0.format(_airport.metar.altimeterHpa);
+					return MFormat.instance.numberFormatDecimal2.format(_airport.metar.altimeterInHg) + " / "
+							+ MFormat.instance.numberFormatDecimal0.format(_airport.metar.altimeterHpa);
 			}
 		}));
 
@@ -291,7 +289,39 @@ public class MModel extends AbstractTableModel
 			@Override
 			public Object get(MAirport _airport)
 			{
-				return (_airport.metar == null || _airport.metar.visibilitySM < 0) ? null : _airport.metar.visibilitySM;
+				if (_airport.metar == null || _airport.metar.visibilitySM < 0)
+					return null;
+				else
+					return _airport.metar.visibilityNonDirectionalVaration ? (_airport.metar.visibilitySM + " NDV")
+							: _airport.metar.visibilitySM;
+			}
+		}));
+
+		columns.put(col++, new MColumn("Visibility extra (SM)", false, SwingConstants.RIGHT, new Comparator<MAirport>()
+		{
+			@Override
+			public int compare(MAirport o1, MAirport o2)
+			{
+				int c;
+				if (o1.metar == null)
+					c = -1;
+				else if (o2.metar == null)
+					c = 1;
+				else
+					c = Double.compare(o1.metar.visibilitySMExtra, o2.metar.visibilitySMExtra);
+				if (!sortedAsc)
+					c = -c;
+				return c;
+			}
+		}, new MColumnValue()
+		{
+			@Override
+			public Object get(MAirport _airport)
+			{
+				if (_airport.metar == null || _airport.metar.visibilitySMExtra < 0)
+					return null;
+				else
+					return _airport.metar.visibilitySMExtra + (" " + _airport.metar.visibilityDirectionExtra).trim();
 			}
 		}));
 
@@ -473,6 +503,9 @@ public class MModel extends AbstractTableModel
 		HashMap<String, MMetar> noaaApiMetars = new MNOAAAPI().load();
 		ArrayList<MMetar> noaaFtpMetars = new MNOAAFTP().load();
 
+		totalMetars = 0;
+		totalMetarNotDecoded = 0;
+
 		for (MMetar metar : noaaFtpMetars)
 		{
 			MAirport airport = get(metar.stationId);
@@ -480,6 +513,10 @@ public class MModel extends AbstractTableModel
 			{
 				airport.metar = metar;
 				airport.xPlane = xPlaneMap.containsKey(metar.stationId);
+
+				totalMetars++;
+				if (metar.notDecoded)
+					totalMetarNotDecoded++;
 			}
 
 			MMetar apiMetar = noaaApiMetars.get(metar.stationId);
@@ -496,13 +533,6 @@ public class MModel extends AbstractTableModel
 		Logger.debug("load end");
 	}
 
-	public void resetColumn()
-	{
-		MColumn column = columns.get(sortedColumn);
-		if (column.name.endsWith("+") || column.name.endsWith("-"))
-			column.name = column.name.substring(0, column.name.length() - 2);
-	}
-
 	public boolean canSort(int _col)
 	{
 		return columns.get(_col).comparator != null;
@@ -510,8 +540,6 @@ public class MModel extends AbstractTableModel
 
 	public void sort()
 	{
-		columns.get(sortedColumn).name += sortedAsc ? " +" : " -";
-
 		Collections.sort(visibleAirports, columns.get(sortedColumn).comparator);
 	}
 
@@ -519,13 +547,28 @@ public class MModel extends AbstractTableModel
 	{
 		visibleAirports.clear();
 
-		if (showOnlyAirportsWithMetar)
-		{
-			for (MAirport airport : airports)
-				if (airport.metar != null)
-					visibleAirports.add(airport);
-		}
-		else
-			visibleAirports.addAll(airports);
+		visibleAirports = airports.stream().filter(airport -> !filterShowOnlyAirportsWithMetar || airport.metar != null)
+				.filter(airport -> filterCountry == null || airport.country.equals(filterCountry.code))
+				.collect(Collectors.toList());
+	}
+
+	public int getTotalAirports()
+	{
+		return airports.size();
+	}
+
+	public int getVisibleAirports()
+	{
+		return visibleAirports.size();
+	}
+
+	public int getTotalMetars()
+	{
+		return totalMetars;
+	}
+
+	public int getTotalMetarNotDecoded()
+	{
+		return totalMetarNotDecoded;
 	}
 }

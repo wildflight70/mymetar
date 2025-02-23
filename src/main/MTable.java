@@ -26,8 +26,8 @@ import javax.swing.table.TableColumnModel;
 import org.tinylog.Logger;
 
 import data.MAirport;
-import data.MMetar;
-import data.MNOAAAPI;
+import data.MCountry;
+import util.MClipboard;
 import util.MColor;
 
 @SuppressWarnings("serial")
@@ -36,6 +36,7 @@ public class MTable extends JTable
 	private final static Color ROW_BACKGROUND_COLOR = new Color(225, 240, 225);
 	private final static Color EXTRA_COLOR = new Color(200, 255, 200);
 	private final static Color FOUND_COLOR = Color.BLUE;
+	private final static Color NOT_DECODED_COLOR = new Color(255, 200, 200);
 
 	private MModel model;
 
@@ -48,6 +49,9 @@ public class MTable extends JTable
 		super(_model);
 
 		model = _model;
+
+		TableColumn column = columnModel.getColumn(model.sortedColumn);
+		column.setHeaderValue(_model.getColumnName(model.sortedColumn) + (model.sortedAsc ? " +" : " -"));
 
 		getTableHeader().setReorderingAllowed(false);
 
@@ -82,7 +86,6 @@ public class MTable extends JTable
 				int col = columnModel.getColumnIndexAtX(e.getX());
 				if (col >= 0 && model.canSort(col))
 				{
-					_model.resetColumn();
 					TableColumn column = columnModel.getColumn(model.sortedColumn);
 					column.setHeaderValue(_model.getColumnName(model.sortedColumn));
 
@@ -97,7 +100,7 @@ public class MTable extends JTable
 					_model.fireTableDataChanged();
 
 					column = columnModel.getColumn(model.sortedColumn);
-					column.setHeaderValue(_model.getColumnName(model.sortedColumn));
+					column.setHeaderValue(_model.getColumnName(model.sortedColumn) + (model.sortedAsc ? " +" : " -"));
 					header.repaint();
 				}
 			}
@@ -136,13 +139,13 @@ public class MTable extends JTable
 	{
 		JPopupMenu popup = new JPopupMenu();
 
-		JMenuItem menuItemLoadAPI = new JMenuItem("Load from NOAA API");
+		JMenuItem menuItemLoadAPI = new JMenuItem("Copy METAR to clipboard");
 		menuItemLoadAPI.addActionListener(new ActionListener()
 		{
 			@Override
 			public void actionPerformed(ActionEvent e)
 			{
-				doLoadAPI();
+				doCopyMetarToClipboard();
 			}
 		});
 		popup.add(menuItemLoadAPI);
@@ -182,24 +185,38 @@ public class MTable extends JTable
 	{
 		Component c = super.prepareRenderer(renderer, row, col);
 
+		// Set background row color
 		if (!isCellSelected(row, col))
 			if (row % 2 == 0)
 				c.setBackground(getBackground());
 			else
 				c.setBackground(ROW_BACKGROUND_COLOR);
 
+		// Set background color to extra columns (not relative to metar)
 		MColumn column = model.columns.get(col);
 		if (column.extra)
 			c.setBackground(MColor.blend(c.getBackground(), EXTRA_COLOR));
 
+		// Set alignment
 		((JLabel) c).setHorizontalAlignment(column.alignment);
 
+		// Highlight search
 		MAirport airport = model.visibleAirports.get(row);
 		c.setForeground(airport.found ? FOUND_COLOR : Color.BLACK);
+
+		// Highlight not decoded metars
+		if (column.name.equals("Station id") || column.name.equals("Raw"))
+			if (airport.metar != null && airport.metar.notDecoded)
+				c.setBackground(MColor.blend(c.getBackground(), NOT_DECODED_COLOR));
 
 		return c;
 	}
 
+	/**
+	 * Select a row and scroll table to it.
+	 * 
+	 * @param _row
+	 */
 	public void selectRow(int _row)
 	{
 		if (getRowCount() > 0 && _row < getRowCount())
@@ -209,6 +226,12 @@ public class MTable extends JTable
 		}
 	}
 
+	/**
+	 * Find all rows that match a text. Press ENTER to scroll to the next row.
+	 * Search applies to stationId.
+	 * 
+	 * @param _text
+	 */
 	public void find(String _text)
 	{
 		if (!_text.equals(findText))
@@ -264,33 +287,29 @@ public class MTable extends JTable
 		}
 	}
 
-	private void doLoadAPI()
+	private void doCopyMetarToClipboard()
 	{
 		int selectedRow = getSelectedRow();
 
 		MAirport selectedAirport = model.visibleAirports.get(selectedRow);
 		if (selectedAirport.metar != null)
 		{
-			MNOAAAPI load = new MNOAAAPI();
-			MMetar metar = load.download(selectedAirport.stationId);
-			if (metar != null)
-			{
-				selectedAirport.metar.extraFlightCategory = metar.extraFlightCategory;
-
-				model.fireTableRowsUpdated(selectedRow, selectedRow);
-			}
+			new MClipboard().copy(selectedAirport.metar.rawText);
 		}
 	}
 
-	public void updateVisible(boolean _showOnlyAirportsWithMetar)
+	public void updateVisible(boolean _showOnlyAirportsWithMetar, MCountry _country)
 	{
-		model.showOnlyAirportsWithMetar = _showOnlyAirportsWithMetar;
+		model.filterShowOnlyAirportsWithMetar = _showOnlyAirportsWithMetar;
+		model.filterCountry = _country.code.isEmpty() ? null : _country;
 		model.updateVisible();
 		model.fireTableDataChanged();
+		selectRow(0);
 	}
 
 	public void updateTop()
 	{
-		MTop.instance.update(model.airports.size(), model.visibleAirports.size(), findRows.size());
+		MTop.instance.update(model.getTotalAirports(), model.getVisibleAirports(), findRows.size(), model.getTotalMetars(),
+				model.getTotalMetarNotDecoded());
 	}
 }

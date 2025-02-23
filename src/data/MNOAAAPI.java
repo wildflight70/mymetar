@@ -23,8 +23,8 @@ import org.tinylog.Logger;
 
 public class MNOAAAPI
 {
-	public static final String LOCAL_DIR = "temp/";
-	public static final String METARS_FILE = "noaa_api_metars.csv";
+	private static final String LOCAL_DIR = "temp/";
+	private static final String METARS_FILE = "noaa_api_metars.csv";
 
 	public MMetar download(String _stationId)
 	{
@@ -204,7 +204,7 @@ public class MNOAAAPI
 
 						LocalDateTime observationTime = LocalDateTime.parse(items[0]);
 						String rawText = items[1];
-						String flightCategory = items.length == 5 ? items[4] : "";
+						String flightCategory = items.length == 3 ? items[2] : "";
 
 						int p = rawText.indexOf(" ");
 						String stationId = rawText.substring(0, p);

@@ -4,11 +4,14 @@ import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
+import java.util.HashMap;
 
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 
 import data.MAirport;
+import data.MCountry;
+import data.MOurAirports;
 
 @SuppressWarnings("serial")
 public class MBottom extends JPanel
@@ -17,10 +20,15 @@ public class MBottom extends JPanel
 	private JLabel labelCountryValue;
 	private JLabel labelCityValue;
 
+	private HashMap<String, MCountry> countries;
+
 	public static MBottom instance = new MBottom();
 
 	private MBottom()
 	{
+		MOurAirports ourAirports = new MOurAirports();
+		countries = ourAirports.loadCountries();
+
 		Font boldFont = getFont().deriveFont(Font.BOLD);
 
 		setLayout(new GridBagLayout());
@@ -76,7 +84,7 @@ public class MBottom extends JPanel
 	public void update(MAirport _airport)
 	{
 		labelAirportValue.setText(_airport.name);
-		labelCountryValue.setText(_airport.country);
+		labelCountryValue.setText(countries.get(_airport.country).toString());
 		labelCityValue.setText(_airport.city);
 	}
 }
