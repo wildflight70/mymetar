@@ -40,6 +40,9 @@ public class MModel extends AbstractTableModel
 	public boolean filterShowOnlyAirportsWithMetar;
 	public MCountry filterCountry;
 
+	private int totalMetars;
+	private int totalMetarNotDecoded;
+
 	public MModel()
 	{
 		visibleAirports = new ArrayList<MAirport>();
@@ -468,6 +471,9 @@ public class MModel extends AbstractTableModel
 		HashMap<String, MMetar> noaaApiMetars = new MNOAAAPI().load();
 		ArrayList<MMetar> noaaFtpMetars = new MNOAAFTP().load();
 
+		totalMetars = 0;
+		totalMetarNotDecoded = 0;
+
 		for (MMetar metar : noaaFtpMetars)
 		{
 			MAirport airport = get(metar.stationId);
@@ -475,6 +481,10 @@ public class MModel extends AbstractTableModel
 			{
 				airport.metar = metar;
 				airport.xPlane = xPlaneMap.containsKey(metar.stationId);
+				
+				totalMetars++;
+				if (metar.notDecoded)
+					totalMetarNotDecoded++;
 			}
 
 			MMetar apiMetar = noaaApiMetars.get(metar.stationId);
@@ -491,13 +501,6 @@ public class MModel extends AbstractTableModel
 		Logger.debug("load end");
 	}
 
-	public void resetColumn()
-	{
-		MColumn column = columns.get(sortedColumn);
-		if (column.name.endsWith("+") || column.name.endsWith("-"))
-			column.name = column.name.substring(0, column.name.length() - 2);
-	}
-
 	public boolean canSort(int _col)
 	{
 		return columns.get(_col).comparator != null;
@@ -505,8 +508,6 @@ public class MModel extends AbstractTableModel
 
 	public void sort()
 	{
-		columns.get(sortedColumn).name += sortedAsc ? " +" : " -";
-
 		Collections.sort(visibleAirports, columns.get(sortedColumn).comparator);
 	}
 
@@ -517,5 +518,15 @@ public class MModel extends AbstractTableModel
 		visibleAirports = airports.stream().filter(airport -> !filterShowOnlyAirportsWithMetar || airport.metar != null)
 				.filter(airport -> filterCountry == null || airport.country.equals(filterCountry.code))
 				.collect(Collectors.toList());
+	}
+
+	public int getTotalMetars()
+	{
+		return totalMetars;
+	}
+
+	public int getTotalMetarNotDecoded()
+	{
+		return totalMetarNotDecoded;
 	}
 }

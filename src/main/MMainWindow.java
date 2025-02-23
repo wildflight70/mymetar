@@ -106,7 +106,6 @@ public class MMainWindow extends JFrame
 		ourAirports.downloadCountries();
 
 		// Update table
-		model.resetColumn();
 		model.load();
 		model.fireTableDataChanged();
 		new MTableColumnAdjuster(table).adjustColumns();

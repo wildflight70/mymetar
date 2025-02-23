@@ -21,6 +21,7 @@ public class MMetar
 			.compile("(CAVOK|CLR|SKC|NSC|NCD|FEW|SCT|BKN|OVC|VV)(\\d{2,3})?(CB|TCU)?");
 	private static final Pattern PATTERN_WEATHER = Pattern
 			.compile("(-|\\+|VC|RE)?(MI|BC|DR|BL|SH|TS|FZ)?(VCSH|RA|DZ|SN|SG|IC|PL|GR|GS|FG|BR|HZ|FU|VA|DU|SA|SQ|FC|SS|DS)$");
+	private static final Pattern PATTERN_NOT_DECODE = Pattern.compile("(?<=^<html>|</b>)(.*?)(?=<b>|</html>$)");
 
 	public String rawText;
 	public String stationId;
@@ -45,6 +46,7 @@ public class MMetar
 	public String extraFlightCategory = "";
 
 	public String rawTextHighlight;
+	public boolean notDecoded;
 
 	public class VLMetarCloud
 	{
@@ -199,6 +201,8 @@ public class MMetar
 		decodeWind(items);
 		decodeClouds(items);
 		decodeWeather(items);
+
+		notDecoded();
 	}
 
 	private void decodeNoSignal()
@@ -450,6 +454,20 @@ public class MMetar
 
 		if (!weather.isEmpty())
 			weather = weather.substring(0, weather.length() - 2);
+	}
+
+	private void notDecoded()
+	{
+		Matcher matcher = PATTERN_NOT_DECODE.matcher(rawTextHighlight);
+		while (matcher.find())
+		{
+			String nonBold = matcher.group(1).trim();
+			if (!nonBold.isEmpty())
+			{
+				notDecoded = true;
+				break;
+			}
+		}
 	}
 
 	private int mpsToKnots(int _mps)

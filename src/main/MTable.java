@@ -27,8 +27,7 @@ import org.tinylog.Logger;
 
 import data.MAirport;
 import data.MCountry;
-import data.MMetar;
-import data.MNOAAAPI;
+import util.MClipboard;
 import util.MColor;
 
 @SuppressWarnings("serial")
@@ -37,6 +36,7 @@ public class MTable extends JTable
 	private final static Color ROW_BACKGROUND_COLOR = new Color(225, 240, 225);
 	private final static Color EXTRA_COLOR = new Color(200, 255, 200);
 	private final static Color FOUND_COLOR = Color.BLUE;
+	private final static Color NOT_DECODED_COLOR = new Color(255, 200, 200);
 
 	private MModel model;
 
@@ -49,6 +49,9 @@ public class MTable extends JTable
 		super(_model);
 
 		model = _model;
+
+		TableColumn column = columnModel.getColumn(model.sortedColumn);
+		column.setHeaderValue(_model.getColumnName(model.sortedColumn) + (model.sortedAsc ? " +" : " -"));
 
 		getTableHeader().setReorderingAllowed(false);
 
@@ -83,7 +86,6 @@ public class MTable extends JTable
 				int col = columnModel.getColumnIndexAtX(e.getX());
 				if (col >= 0 && model.canSort(col))
 				{
-					_model.resetColumn();
 					TableColumn column = columnModel.getColumn(model.sortedColumn);
 					column.setHeaderValue(_model.getColumnName(model.sortedColumn));
 
@@ -98,7 +100,7 @@ public class MTable extends JTable
 					_model.fireTableDataChanged();
 
 					column = columnModel.getColumn(model.sortedColumn);
-					column.setHeaderValue(_model.getColumnName(model.sortedColumn));
+					column.setHeaderValue(_model.getColumnName(model.sortedColumn) + (model.sortedAsc ? " +" : " -"));
 					header.repaint();
 				}
 			}
@@ -137,13 +139,13 @@ public class MTable extends JTable
 	{
 		JPopupMenu popup = new JPopupMenu();
 
-		JMenuItem menuItemLoadAPI = new JMenuItem("Load from NOAA API");
+		JMenuItem menuItemLoadAPI = new JMenuItem("Copy METAR to clipboard");
 		menuItemLoadAPI.addActionListener(new ActionListener()
 		{
 			@Override
 			public void actionPerformed(ActionEvent e)
 			{
-				doLoadAPI();
+				doCopyMetarToClipboard();
 			}
 		});
 		popup.add(menuItemLoadAPI);
@@ -197,6 +199,10 @@ public class MTable extends JTable
 
 		MAirport airport = model.visibleAirports.get(row);
 		c.setForeground(airport.found ? FOUND_COLOR : Color.BLACK);
+
+		if (column.name.equals("Station id") || column.name.equals("Raw"))
+			if (airport.metar != null && airport.metar.notDecoded)
+				c.setBackground(MColor.blend(c.getBackground(), NOT_DECODED_COLOR));
 
 		return c;
 	}
@@ -265,21 +271,14 @@ public class MTable extends JTable
 		}
 	}
 
-	private void doLoadAPI()
+	private void doCopyMetarToClipboard()
 	{
 		int selectedRow = getSelectedRow();
 
 		MAirport selectedAirport = model.visibleAirports.get(selectedRow);
 		if (selectedAirport.metar != null)
 		{
-			MNOAAAPI load = new MNOAAAPI();
-			MMetar metar = load.download(selectedAirport.stationId);
-			if (metar != null)
-			{
-				selectedAirport.metar.extraFlightCategory = metar.extraFlightCategory;
-
-				model.fireTableRowsUpdated(selectedRow, selectedRow);
-			}
+			new MClipboard().copy(selectedAirport.metar.rawText);
 		}
 	}
 
@@ -294,6 +293,7 @@ public class MTable extends JTable
 
 	public void updateTop()
 	{
-		MTop.instance.update(model.airports.size(), model.visibleAirports.size(), findRows.size());
+		MTop.instance.update(model.airports.size(), model.visibleAirports.size(), findRows.size(), model.getTotalMetars(),
+				model.getTotalMetarNotDecoded());
 	}
 }
