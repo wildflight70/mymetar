@@ -8,15 +8,20 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Vector;
 
 import javax.swing.BorderFactory;
 import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
-import javax.swing.SwingConstants;
 import javax.swing.border.Border;
 
+import data.MCountry;
+import data.MOurAirports;
 import util.MFormat;
 
 @SuppressWarnings("serial")
@@ -74,19 +79,59 @@ public class MTop extends JPanel
 		GridBagConstraints c = new GridBagConstraints();
 		c.insets = new Insets(2, 2, 2, 2);
 
-		JCheckBox checkShowOnlyMetars = new JCheckBox("Show only airports with METAR");
-		checkShowOnlyMetars.setHorizontalTextPosition(SwingConstants.LEFT);
+		// Show airports with METAR
+		JLabel labelShowOnlyMetars = new JLabel("Show only airports with METAR");
 		c.gridx = 0;
+		c.gridy = 0;
+		c.anchor = GridBagConstraints.LINE_END;
+		panel.add(labelShowOnlyMetars, c);
+
+		JCheckBox checkShowOnlyMetars = new JCheckBox();
+		c.gridx = 1;
 		c.gridy = 0;
 		c.anchor = GridBagConstraints.LINE_START;
 		panel.add(checkShowOnlyMetars, c);
+
+		// Country
+		JLabel labelCountry = new JLabel("Country");
+		c.gridx = 0;
+		c.gridy = 1;
+		c.anchor = GridBagConstraints.LINE_END;
+		panel.add(labelCountry, c);
+
+		Vector<MCountry> countries = new Vector<MCountry>();
+		countries.add(new MCountry("", ""));
+		countries.addAll(new MOurAirports().loadCountries().values());
+		Collections.sort(countries, new Comparator<MCountry>()
+		{
+			@Override
+			public int compare(MCountry o1, MCountry o2)
+			{
+				return o1.name.compareTo(o2.name);
+			}
+		});
+		JComboBox<MCountry> comboCountry = new JComboBox<MCountry>(countries);
+		c.gridx = 1;
+		c.gridy = 1;
+		c.anchor = GridBagConstraints.LINE_END;
+		panel.add(comboCountry, c);
+
+		comboCountry.addActionListener(new ActionListener()
+		{
+			@Override
+			public void actionPerformed(ActionEvent e)
+			{
+				table.updateVisible(checkShowOnlyMetars.isSelected(), (MCountry) comboCountry.getSelectedItem());
+				table.updateTop();
+			}
+		});
 
 		checkShowOnlyMetars.addActionListener(new ActionListener()
 		{
 			@Override
 			public void actionPerformed(ActionEvent e)
 			{
-				table.updateVisible(checkShowOnlyMetars.isSelected());
+				table.updateVisible(checkShowOnlyMetars.isSelected(), (MCountry) comboCountry.getSelectedItem());
 				table.updateTop();
 			}
 		});

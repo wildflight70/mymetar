@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import javax.swing.SwingConstants;
 import javax.swing.table.AbstractTableModel;
@@ -11,6 +13,7 @@ import javax.swing.table.AbstractTableModel;
 import org.tinylog.Logger;
 
 import data.MAirport;
+import data.MCountry;
 import data.MMetar;
 import data.MNOAAAPI;
 import data.MNOAAFTP;
@@ -23,7 +26,7 @@ import util.MFormat;
 public class MModel extends AbstractTableModel
 {
 	public ArrayList<MAirport> airports;
-	public ArrayList<MAirport> visibleAirports;
+	public List<MAirport> visibleAirports;
 
 	interface MColumnValue
 	{
@@ -34,7 +37,8 @@ public class MModel extends AbstractTableModel
 
 	public int sortedColumn;
 	public boolean sortedAsc;
-	public boolean showOnlyAirportsWithMetar;
+	public boolean filterShowOnlyAirportsWithMetar;
+	public MCountry filterCountry;
 
 	public MModel()
 	{
@@ -510,13 +514,8 @@ public class MModel extends AbstractTableModel
 	{
 		visibleAirports.clear();
 
-		if (showOnlyAirportsWithMetar)
-		{
-			for (MAirport airport : airports)
-				if (airport.metar != null)
-					visibleAirports.add(airport);
-		}
-		else
-			visibleAirports.addAll(airports);
+		visibleAirports = airports.stream().filter(airport -> !filterShowOnlyAirportsWithMetar || airport.metar != null)
+				.filter(airport -> filterCountry == null || airport.country.equals(filterCountry.code))
+				.collect(Collectors.toList());
 	}
 }

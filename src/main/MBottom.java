@@ -10,6 +10,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 
 import data.MAirport;
+import data.MCountry;
 import data.MOurAirports;
 
 @SuppressWarnings("serial")
@@ -19,7 +20,7 @@ public class MBottom extends JPanel
 	private JLabel labelCountryValue;
 	private JLabel labelCityValue;
 
-	private HashMap<String, String> countries;
+	private HashMap<String, MCountry> countries;
 
 	public static MBottom instance = new MBottom();
 
@@ -83,7 +84,7 @@ public class MBottom extends JPanel
 	public void update(MAirport _airport)
 	{
 		labelAirportValue.setText(_airport.name);
-		labelCountryValue.setText(countries.get(_airport.country) + " (" + _airport.country + ")");
+		labelCountryValue.setText(countries.get(_airport.country).toString());
 		labelCityValue.setText(_airport.city);
 	}
 }

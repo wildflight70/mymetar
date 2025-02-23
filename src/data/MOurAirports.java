@@ -196,9 +196,9 @@ public class MOurAirports
 		return airports;
 	}
 
-	public HashMap<String, String> loadCountries()
+	public HashMap<String, MCountry> loadCountries()
 	{
-		HashMap<String, String> countries = new HashMap<String, String>();
+		HashMap<String, MCountry> countries = new HashMap<String, MCountry>();
 
 		if (new File(COUNTRIES_FILE).exists())
 			try (BufferedReader reader = new BufferedReader(new FileReader(COUNTRIES_FILE)))
@@ -208,7 +208,8 @@ public class MOurAirports
 				while ((line = reader.readLine()) != null)
 				{
 					String[] items = line.split(",");
-					countries.put(items[0], items[1]);
+					MCountry country = new MCountry(items[0], items[1]);
+					countries.put(country.code, country);
 				}
 			}
 			catch (IOException e)
@@ -227,6 +228,6 @@ public class MOurAirports
 		ourAirports.downloadAirports();
 		ourAirports.downloadCountries();
 
-		HashMap<String, String> countries = ourAirports.loadCountries();
+		HashMap<String, MCountry> countries = ourAirports.loadCountries();
 	}
 }

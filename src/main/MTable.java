@@ -26,6 +26,7 @@ import javax.swing.table.TableColumnModel;
 import org.tinylog.Logger;
 
 import data.MAirport;
+import data.MCountry;
 import data.MMetar;
 import data.MNOAAAPI;
 import util.MColor;
@@ -282,11 +283,13 @@ public class MTable extends JTable
 		}
 	}
 
-	public void updateVisible(boolean _showOnlyAirportsWithMetar)
+	public void updateVisible(boolean _showOnlyAirportsWithMetar, MCountry _country)
 	{
-		model.showOnlyAirportsWithMetar = _showOnlyAirportsWithMetar;
+		model.filterShowOnlyAirportsWithMetar = _showOnlyAirportsWithMetar;
+		model.filterCountry = _country.code.isEmpty() ? null : _country;
 		model.updateVisible();
 		model.fireTableDataChanged();
+		selectRow(0);
 	}
 
 	public void updateTop()
