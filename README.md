@@ -11,7 +11,7 @@ It uses the following libraries:
 - common-net (https://commons.apache.org)
 - common-csv (dependencies: common-io and common-codec)
 
-The build.xml file allows generating a distribution using Ant (https://ant.apache.org). The generated distribution is located in the <code>dist</code> folder and includes the launchers <code>mymetar.cmd</code> for Windows and <code>mymetar.sh</code> for Linux.
+The <code>build.xml</code> file allows generating a distribution using Ant (https://ant.apache.org). The generated distribution is located in the <code>dist</code> folder and includes the launchers <code>mymetar.cmd</code> for Windows and <code>mymetar.sh</code> for Linux.
 
 The <code>mymetar.ini</code> configuration file contains:
 - The location of X-Plane
@@ -25,3 +25,9 @@ Downloading data generates a <code>temp</code> folder containing:
 - <code>noaa_api_metars.csv</code>: Latest METARs
 - <code>ourairports_airports.csv</code>: Airports
 - <code>ourairports_countries.csv</code>: Countries
+
+Improvements:
+- Complete the decoding of METARs
+- Display progress during data download
+- Better warn the user in case of errors
+- Read airports from Microsoft Flight Simulator 2020 & 2024
