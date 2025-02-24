@@ -358,7 +358,7 @@ public class MModel extends AbstractTableModel
 			@Override
 			public Object get(MAirport _airport)
 			{
-				return _airport.metar == null ? null : _airport.metar.windSpeedKt;
+				return (_airport.metar == null || _airport.metar.windSpeedKt < 0) ? null : _airport.metar.windSpeedKt;
 			}
 		}));
 

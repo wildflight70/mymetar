@@ -4,7 +4,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -29,8 +28,10 @@ public class MMetar
 	private static final Pattern PATTERN_REMARK_AUTOMATED_STATION_TYPES = Pattern.compile("RMK.*(AO[12])\\s");
 	private static final Pattern PATTERN_REMARK_SEA_LEVEL_PRESSURE = Pattern.compile("RMK.*(SLP\\d{3})\\s");
 	private static final Pattern PATTERN_REMARK_PRECISE_TEMPERATION = Pattern.compile("RMK.*(T\\d{8})\\s");
-	private static final Pattern PATTERN_REMARK_PRESSURE_TENDENCY = Pattern.compile("RMK.*(5\\d{4})\\s");
-	private static final Pattern PATTERN_REMARK_SENSOR = Pattern.compile("RMK.*(PWINO|RVRNO|VISNO|TSNO)\\s");
+	private static final Pattern PATTERN_REMARK_PRESSURE_TENDENCY = Pattern.compile("RMK.*(5\\d{4})");
+	private static final Pattern PATTERN_REMARK_SENSOR = Pattern.compile("(PWINO|RVRNO|VISNO|TSNO)\\s");
+	private static final Pattern PATTERN_REMARK_MISSING = Pattern
+			.compile("(WIND|CLD|WX|VIS|PCPN|PRES|DP|ICE|DENSITY\\sALT|T)\\sMISG");
 
 	public String rawText;
 	public String stationId;
@@ -47,7 +48,7 @@ public class MMetar
 	public double visibilitySMExtra = -1.0;
 	public String visibilityDirectionExtra = "";
 	public int windDirectionDegree;
-	public int windSpeedKt;
+	public int windSpeedKt = -1;
 	public int windGustKt;
 	public boolean windVariable;
 	public int windFromDegree;
@@ -84,82 +85,6 @@ public class MMetar
 	{
 		public String cover;
 		public int baseFeet = -1;
-	}
-
-	private static final HashMap<String, String> COVERS = initCovers();
-	private static final HashMap<String, String> WEATHERS = initWeathers();
-	private static final HashMap<String, String> PRESSURE_TENDENCIES = initPressureTendencies();
-
-	private static HashMap<String, String> initCovers()
-	{
-		HashMap<String, String> covers = new HashMap<String, String>();
-		covers.put("CAVOK", "CAVOK");
-		covers.put("CLR", "Clear");
-		covers.put("SKC", "Clear");
-		covers.put("NSC", "No signifiant cloud");
-		covers.put("NSW", "No signifiant weather");
-		covers.put("NCD", "No cloud detected");
-		covers.put("FEW", "Few");
-		covers.put("SCT", "Scattered");
-		covers.put("BKN", "Broken");
-		covers.put("OVC", "Overcast");
-		covers.put("VV", "Sky obscured");
-		return covers;
-	}
-
-	private static HashMap<String, String> initWeathers()
-	{
-		HashMap<String, String> weathers = new HashMap<String, String>();
-		weathers.put("-", "Light");
-		weathers.put("+", "Heavy");
-		weathers.put("VC", "In vicinity");
-		weathers.put("RE", "Recent");
-
-		weathers.put("MI", "Shallow");
-		weathers.put("BC", "Patches");
-		weathers.put("DR", "Low drifting");
-		weathers.put("BL", "Blowing");
-		weathers.put("SH", "Showers");
-		weathers.put("TS", "Thunderstorm");
-		weathers.put("FZ", "Freezing");
-
-		weathers.put("VCSH", "Vicinity showers");
-		weathers.put("RA", "Rain");
-		weathers.put("DZ", "Drizzle");
-		weathers.put("SN", "Snow");
-		weathers.put("SG", "Snow grains");
-		weathers.put("IC", "Ice crystals");
-		weathers.put("PL", "Ice pellets");
-		weathers.put("GR", "Hail");
-		weathers.put("GS", "Small hail");
-		weathers.put("FG", "Fog");
-		weathers.put("BR", "Mist");
-		weathers.put("HZ", "Haze");
-		weathers.put("FU", "Smoke");
-		weathers.put("VA", "Volcanic ash");
-		weathers.put("DU", "Widespread dust");
-		weathers.put("SA", "Sand");
-		weathers.put("SQ", "Squall");
-		weathers.put("FC", "Funnel cloud");
-		weathers.put("SS", "Sandstorm");
-		weathers.put("DS", "Dust storm");
-
-		return weathers;
-	}
-
-	private static HashMap<String, String> initPressureTendencies()
-	{
-		HashMap<String, String> pressureTendencies = new HashMap<String, String>();
-		pressureTendencies.put("0", "No change");
-		pressureTendencies.put("1", "Rising then falling");
-		pressureTendencies.put("2", "Rising then steady");
-		pressureTendencies.put("3", "Rising steadily");
-		pressureTendencies.put("4", "Rising rapidly");
-		pressureTendencies.put("5", "Falling then rising");
-		pressureTendencies.put("6", "Falling then steady");
-		pressureTendencies.put("7", "Falling steadily");
-		pressureTendencies.put("8", "Falling rapidly");
-		return pressureTendencies;
 	}
 
 	public MMetar(LocalDateTime _observationTime, String _raw, String _stationId)
@@ -293,6 +218,12 @@ public class MMetar
 
 		for (int i = 2; i < _items.length; i++)
 		{
+			if (_items[i].equals("/////KT"))
+			{
+				highLight(_items[i]);
+				break;
+			}
+
 			Matcher matcher = PATTERN_WIND.matcher(_items[i]);
 			if (matcher.find())
 			{
@@ -456,7 +387,7 @@ public class MMetar
 				String type = matcher.group(3);
 
 				VLMetarCloud cloud = new VLMetarCloud();
-				cloud.cover = COVERS.get(cloudType);
+				cloud.cover = MMetarDefinitions.instance.covers.get(cloudType);
 				if (type != null)
 					cloud.cover += " " + type;
 				cloud.baseFeet = altitude == null ? -1 : Integer.parseInt(altitude) * 100;
@@ -481,13 +412,16 @@ public class MMetar
 
 		for (int i = 2; i < _items.length; i++)
 		{
+			if (_items[i].equals("RMK"))
+				break;
+
 			Matcher matcher = PATTERN_WEATHER.matcher(_items[i]);
 			if (matcher.find())
 			{
 				String rawIntensity = matcher.group(1);
 				if (rawIntensity == null)
 					rawIntensity = "";
-				String intensity = WEATHERS.get(rawIntensity);
+				String intensity = MMetarDefinitions.instance.weathers.get(rawIntensity);
 				if (intensity == null)
 					intensity = "Moderate";
 				if (!intensity.isEmpty())
@@ -496,7 +430,7 @@ public class MMetar
 				String rawDescriptor = matcher.group(2);
 				if (rawDescriptor == null)
 					rawDescriptor = "";
-				String descriptor = WEATHERS.get(rawDescriptor);
+				String descriptor = MMetarDefinitions.instance.weathers.get(rawDescriptor);
 				if (descriptor == null)
 					descriptor = "";
 				if (!descriptor.isEmpty())
@@ -505,7 +439,7 @@ public class MMetar
 				String rawPhenomenon = matcher.group(3);
 				if (rawPhenomenon == null)
 					rawPhenomenon = "";
-				String phenomenon = WEATHERS.get(rawPhenomenon);
+				String phenomenon = MMetarDefinitions.instance.weathers.get(rawPhenomenon);
 
 				if (rawPhenomenon.equals("VCSH"))
 					intensity = "";
@@ -521,94 +455,97 @@ public class MMetar
 
 	private void decodeRemarks()
 	{
-		Matcher matcher = PATTERN_REMARK_AUTOMATED_STATION_TYPES.matcher(rawText);
-		if (matcher.find())
+		if (rawText.contains(" RMK"))
 		{
-			String rawStationType = matcher.group(1);
-			String stationType = null;
-			if (rawStationType.equals("AO1"))
-				stationType = "Automated station without a precipitation sensor";
-			else if (rawStationType.equals("AO2"))
-				stationType = "Automated station with a precipitation sensor";
-			if (stationType != null)
+			highLight(" RMK");
+
+			Matcher matcher = PATTERN_REMARK_AUTOMATED_STATION_TYPES.matcher(rawText);
+			if (matcher.find())
 			{
-				remarks.add(new MRemark(rawStationType, stationType));
-				highLight(rawStationType);
+				String rawStationType = matcher.group(1);
+				String stationType = MMetarDefinitions.instance.automatedStationTypes.get(rawStationType);
+				if (stationType != null)
+				{
+					remarks.add(new MRemark(rawStationType, stationType));
+					highLight(rawStationType);
+				}
+			}
+
+			matcher = PATTERN_REMARK_SEA_LEVEL_PRESSURE.matcher(rawText);
+			if (matcher.find())
+			{
+				String rawSeaLevelPressure = matcher.group(1);
+				double pressure = Double.parseDouble(rawSeaLevelPressure.substring(3));
+				if (pressure < 200.0)
+					pressure = pressure / 10.0 + 1000.0;
+				else
+					pressure = pressure / 10.0 + 900.0;
+				remarks.add(new MRemark(rawSeaLevelPressure, MFormat.instance.numberFormatDecimal1.format(pressure) + " hPa"));
+				highLight(rawSeaLevelPressure);
+			}
+
+			matcher = PATTERN_REMARK_PRECISE_TEMPERATION.matcher(rawText);
+			if (matcher.find())
+			{
+				String rawPreciseTemperature = matcher.group(1);
+				String temperatureSign = rawPreciseTemperature.substring(1, 2);
+				double temperature = Integer.parseInt(rawPreciseTemperature.substring(2, 5)) / 10.0;
+				if (temperatureSign.equals("1"))
+					temperature = -temperature;
+				String dewPointSign = rawPreciseTemperature.substring(5, 6);
+				double dewPoint = Integer.parseInt(rawPreciseTemperature.substring(6)) / 10.0;
+				if (dewPointSign.equals("1"))
+					dewPoint = -dewPoint;
+				remarks.add(new MRemark(rawPreciseTemperature,
+						"temperature=" + MFormat.instance.numberFormatDecimal1.format(temperature) + "°C" + ", dew point="
+								+ MFormat.instance.numberFormatDecimal1.format(dewPoint) + "°C"));
+				highLight(rawPreciseTemperature);
+			}
+
+			matcher = PATTERN_REMARK_PRESSURE_TENDENCY.matcher(rawText);
+			if (matcher.find())
+			{
+				String rawPressureTendency = matcher.group(1);
+				String trend = rawPressureTendency.substring(1, 2);
+				String pressureSign = rawPressureTendency.substring(2, 3);
+				double pressure = Double.parseDouble(rawPressureTendency.substring(3)) / 10.0;
+				if (pressureSign.equals("1"))
+					pressure = -pressure;
+				remarks.add(new MRemark(rawPressureTendency,
+						MMetarDefinitions.instance.pressureTendencies.get(trend) + ", " + pressure + " hPa change"));
+				highLight(rawPressureTendency);
+			}
+
+			matcher = PATTERN_REMARK_SENSOR.matcher(rawText);
+			while (matcher.find())
+			{
+				String rawSensor = matcher.group(1);
+				String sensor = MMetarDefinitions.instance.sensors.get(rawSensor);
+				if (sensor != null)
+				{
+					remarks.add(new MRemark(rawSensor, sensor));
+					highLight(rawSensor);
+				}
+			}
+
+			matcher = PATTERN_REMARK_MISSING.matcher(rawText);
+			while (matcher.find())
+			{
+				String rawMissing = matcher.group(1) + " MISG";
+				String missing = MMetarDefinitions.instance.dataMissing.get(rawMissing);
+				if (missing != null)
+				{
+					remarks.add(new MRemark(rawMissing, missing));
+					highLight(" " + rawMissing);
+				}
+			}
+
+			if (rawText.endsWith(" $"))
+			{
+				remarks.add(new MRemark("$", "Maintenance needed at the station"));
+				highLight(" $");
 			}
 		}
-
-		matcher = PATTERN_REMARK_SEA_LEVEL_PRESSURE.matcher(rawText);
-		if (matcher.find())
-		{
-			String rawSeaLevelPressure = matcher.group(1);
-			double pressure = Double.parseDouble(rawSeaLevelPressure.substring(3));
-			if (pressure < 200.0)
-				pressure = pressure / 10.0 + 1000.0;
-			else
-				pressure = pressure / 10.0 + 900.0;
-			remarks.add(new MRemark(rawSeaLevelPressure, MFormat.instance.numberFormatDecimal1.format(pressure) + " hPa"));
-			highLight(rawSeaLevelPressure);
-		}
-
-		matcher = PATTERN_REMARK_PRECISE_TEMPERATION.matcher(rawText);
-		if (matcher.find())
-		{
-			String rawPreciseTemperature = matcher.group(1);
-			String temperatureSign = rawPreciseTemperature.substring(1, 2);
-			double temperature = Integer.parseInt(rawPreciseTemperature.substring(2, 5)) / 10.0;
-			if (temperatureSign.equals("1"))
-				temperature = -temperature;
-			String dewPointSign = rawPreciseTemperature.substring(5, 6);
-			double dewPoint = Integer.parseInt(rawPreciseTemperature.substring(6)) / 10.0;
-			if (dewPointSign.equals("1"))
-				dewPoint = -dewPoint;
-			remarks.add(
-					new MRemark(rawPreciseTemperature, "temperature=" + MFormat.instance.numberFormatDecimal1.format(temperature)
-							+ "°C" + ", dew point=" + MFormat.instance.numberFormatDecimal1.format(dewPoint) + "°C"));
-			highLight(rawPreciseTemperature);
-		}
-
-		matcher = PATTERN_REMARK_PRESSURE_TENDENCY.matcher(rawText);
-		if (matcher.find())
-		{
-			String rawPressureTendency = matcher.group(1);
-			String trend = rawPressureTendency.substring(1, 2);
-			String pressureSign = rawPressureTendency.substring(2, 3);
-			double pressure = Double.parseDouble(rawPressureTendency.substring(3)) / 10.0;
-			if (pressureSign.equals("1"))
-				pressure = -pressure;
-			remarks.add(new MRemark(rawPressureTendency, PRESSURE_TENDENCIES.get(trend) + ", " + pressure + " hPa change"));
-			highLight(rawPressureTendency);
-		}
-
-		matcher = PATTERN_REMARK_SENSOR.matcher(rawText);
-		while (matcher.find())
-		{
-			String rawSensor = matcher.group(1);
-			String sensor = null;
-			if (rawSensor.equals("PWINO"))
-				sensor = "Precipitation sensor not operational";
-			else if (rawSensor.equals("RVRNO"))
-				sensor = "Runway Visual Range sensor not operational";
-			else if (rawSensor.equals("VISNO"))
-				sensor = "Visibility sensor not operational";
-			else if (rawSensor.equals("TSNO"))
-				sensor = "Thunderstorm sensor not operational";
-			if (sensor != null)
-			{
-				remarks.add(new MRemark(rawSensor, sensor));
-				highLight(rawSensor);
-			}
-		}
-		
-		if (rawText.endsWith("$"))
-		{
-			remarks.add(new MRemark("$", "Maintenance needed at the station"));
-			highLight("$");
-		}
-
-		if (remarks.size() > 0)
-			highLight("RMK");
 	}
 
 	private void notDecoded()
@@ -622,6 +559,20 @@ public class MMetar
 				notDecoded = true;
 				break;
 			}
+		}
+	}
+
+	public static void main(String[] args)
+	{
+		String metar = "CBBC 220900Z AUTO /////KT RMK WIND MISG CLD MISG WX MISG VIS MISG PCPN MISG PRES MISG T MISG DP MISG ICE MISG DENSITY ALT MISG";
+		String pattern = "(WIND|CLD|WX|VIS|PCPN|PRES|T|DP|ICE|DENSITY\\sALT)\\sMISG";
+
+		Pattern regex = Pattern.compile(pattern);
+		Matcher matcher = regex.matcher(metar);
+
+		while (matcher.find())
+		{
+			System.out.println("Missing data: " + matcher.group(1));
 		}
 	}
 }

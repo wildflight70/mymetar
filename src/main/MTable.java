@@ -294,7 +294,7 @@ public class MTable extends JTable
 		MAirport selectedAirport = model.visibleAirports.get(selectedRow);
 		if (selectedAirport.metar != null)
 		{
-			new MClipboard().copy(selectedAirport.metar.rawText);
+			new MClipboard().copy(selectedAirport.metar.rawTextHighlight);
 		}
 	}
 

@@ -31,7 +31,7 @@ public class MTop extends JPanel
 	private JLabel labelVisibleAirportsValue;
 	private JLabel labelFoundAirportsValue;
 	private JLabel labelTotalMetarsValue;
-	private JLabel labelTotalMetarNotDecodedValue;
+	private JLabel labelMetarNotDecodedValue;
 
 	private Font boldFont;
 
@@ -56,19 +56,19 @@ public class MTop extends JPanel
 		// Filter
 		c.gridx = 0;
 		c.gridy = 0;
-		c.anchor = GridBagConstraints.LINE_START;
+		c.anchor = GridBagConstraints.FIRST_LINE_START;
 		add(createFilter(), c);
 
 		// Search
 		c.gridx = 1;
 		c.gridy = 0;
-		c.anchor = GridBagConstraints.LINE_START;
+		c.anchor = GridBagConstraints.FIRST_LINE_START;
 		add(createSearch(), c);
 
 		// Count
 		c.gridx = 2;
 		c.gridy = 0;
-		c.anchor = GridBagConstraints.LINE_START;
+		c.anchor = GridBagConstraints.FIRST_LINE_START;
 		add(createCount(), c);
 	}
 
@@ -241,19 +241,19 @@ public class MTop extends JPanel
 		c.anchor = GridBagConstraints.LINE_END;
 		panel.add(labelTotalMetarsValue, c);
 
-		// Total METAR not decoded
-		JLabel labelTotalMetarNotDecoded = new JLabel("Total METAR not decoded");
+		// Not decoded METARs
+		JLabel labelTotalMetarNotDecoded = new JLabel("Not decoded METARs");
 		c.gridx = 2;
 		c.gridy = 1;
 		c.anchor = GridBagConstraints.LINE_END;
 		panel.add(labelTotalMetarNotDecoded, c);
 
-		labelTotalMetarNotDecodedValue = new JLabel("0");
-		labelTotalMetarNotDecodedValue.setFont(boldFont);
+		labelMetarNotDecodedValue = new JLabel("0");
+		labelMetarNotDecodedValue.setFont(boldFont);
 		c.gridx = 3;
 		c.gridy = 1;
 		c.anchor = GridBagConstraints.LINE_END;
-		panel.add(labelTotalMetarNotDecodedValue, c);
+		panel.add(labelMetarNotDecodedValue, c);
 
 		return panel;
 	}
@@ -265,6 +265,6 @@ public class MTop extends JPanel
 		labelVisibleAirportsValue.setText(MFormat.instance.numberFormatDecimal0.format(_visibleAirports));
 		labelFoundAirportsValue.setText(MFormat.instance.numberFormatDecimal0.format(_foundAirports));
 		labelTotalMetarsValue.setText(MFormat.instance.numberFormatDecimal0.format(_totalMetars));
-		labelTotalMetarNotDecodedValue.setText(MFormat.instance.numberFormatDecimal0.format(_totalMetarNotDecoded));
+		labelMetarNotDecodedValue.setText(MFormat.instance.numberFormatDecimal0.format(_totalMetarNotDecoded));
 	}
 }
