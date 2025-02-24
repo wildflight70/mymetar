@@ -24,7 +24,8 @@ public class MMetar
 	private static final Pattern PATTERN_WEATHER = Pattern
 			.compile("(-|\\+|VC|RE)?(MI|BC|DR|BL|SH|TS|FZ)?(VCSH|RA|DZ|SN|SG|IC|PL|GR|GS|FG|BR|HZ|FU|VA|DU|SA|SQ|FC|SS|DS)$");
 	private static final Pattern PATTERN_RUNWAY_VISUAL_RANGE = Pattern
-			.compile("\s(R(\\d{2}[LCR]?)/([PM])?(\\d{4})(V(\\d{4}))?([UND])?)");
+			.compile("\\b(R(\\d{2}[LCR]?)/([PM])?(\\d{4})(V(\\d{4}))?([UND])?)\\b");
+	private static final Pattern PATTERN_RUNWAY_VISUAL_RANGE_MISSING = Pattern.compile("\\b(R(\\d{2}[LCR]?)//{2,})\\b");
 
 	private static final Pattern PATTERN_REMARK_AUTOMATED_STATION_TYPES = Pattern.compile("RMK.*(AO[12]A?)\\s");
 	private static final Pattern PATTERN_REMARK_SEA_LEVEL_PRESSURE = Pattern.compile("RMK.*(SLP\\d{3})\\s");
@@ -170,16 +171,22 @@ public class MMetar
 			MRunway runway = runways.get(i);
 			buffer.append(runway.runway);
 			buffer.append(":");
-			if (runway.moreLess != null)
-				buffer.append(runway.moreLess);
-			buffer.append(MFormat.instance.numberFormatDecimal0.format(runway.minVisibility) + "m");
-			if (runway.maxVisibility >= 0)
-				buffer.append(" to " + MFormat.instance.numberFormatDecimal0.format(runway.maxVisibility) + "m");
-			if (runway.trend != null)
-				buffer.append(" " + runway.trend);
 
-			if (i < runways.size() - 1)
-				buffer.append(", ");
+			if (runway.minVisibility < 0 && runway.maxVisibility < 0)
+				buffer.append("missing");
+			else
+			{
+				if (runway.moreLess != null)
+					buffer.append(runway.moreLess);
+				buffer.append(MFormat.instance.numberFormatDecimal0.format(runway.minVisibility) + "m");
+				if (runway.maxVisibility >= 0)
+					buffer.append(" to " + MFormat.instance.numberFormatDecimal0.format(runway.maxVisibility) + "m");
+				if (runway.trend != null)
+					buffer.append(" " + runway.trend);
+
+				if (i < runways.size() - 1)
+					buffer.append(", ");
+			}
 		}
 		return buffer.toString();
 	}
@@ -523,6 +530,18 @@ public class MMetar
 			String trend = MMetarDefinitions.instance.runwayTrends.get(rawTrend);
 
 			MRunway runway = new MRunway(rawRunway, moreLess, minVisibility, maxVisibility, trend);
+			runways.add(runway);
+
+			highLight(rawMatch);
+		}
+
+		matcher = PATTERN_RUNWAY_VISUAL_RANGE_MISSING.matcher(rawText);
+		while (matcher.find())
+		{
+			String rawMatch = matcher.group(1);
+			String rawRunway = matcher.group(2);
+
+			MRunway runway = new MRunway(rawRunway, null, -1, -1, null);
 			runways.add(runway);
 
 			highLight(rawMatch);

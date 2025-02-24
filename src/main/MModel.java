@@ -505,7 +505,7 @@ public class MModel extends AbstractTableModel
 
 	public void load()
 	{
-		Logger.debug("load begin");
+		Logger.info("load begin");
 
 		airports = new MOurAirports().loadAirports();
 		HashMap<String, MXPlaneAirport> xPlaneMap = new MXPlane().load();
@@ -539,7 +539,7 @@ public class MModel extends AbstractTableModel
 		sortedAsc = true;
 		sort();
 
-		Logger.debug("load end");
+		Logger.info("load end");
 	}
 
 	public boolean canSort(int _col)

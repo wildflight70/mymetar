@@ -9,7 +9,7 @@ public class MMain
 {
 	public static void main(String[] args)
 	{
-		Logger.debug("myMetar");
+		Logger.info("myMetar");
 
 		SwingUtilities.invokeLater(new Runnable()
 		{

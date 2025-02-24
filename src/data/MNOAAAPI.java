@@ -105,7 +105,7 @@ public class MNOAAAPI
 
 	public boolean downloadAll()
 	{
-		Logger.debug("downloadAll begin");
+		Logger.info("downloadAll begin");
 
 		boolean ok = true;
 
@@ -139,7 +139,7 @@ public class MNOAAAPI
 
 		write(allMetars);
 
-		Logger.debug("downloadAll end");
+		Logger.info("downloadAll end");
 
 		return ok;
 	}

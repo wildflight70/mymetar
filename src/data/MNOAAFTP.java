@@ -38,7 +38,7 @@ public class MNOAAFTP
 
 	public boolean download()
 	{
-		Logger.debug("download begin");
+		Logger.info("download begin");
 
 		boolean ok = true;
 
@@ -47,7 +47,7 @@ public class MNOAAFTP
 			localDir.mkdir();
 
 		int processors = Runtime.getRuntime().availableProcessors();
-		Logger.debug(processors + " processors");
+		Logger.info(processors + " processors");
 
 		ExecutorService executor = Executors.newFixedThreadPool(processors);
 		List<Future<Void>> futures = new ArrayList<>();
@@ -94,7 +94,7 @@ public class MNOAAFTP
 		ArrayList<MMetar> metars = read();
 		write(metars);
 
-		Logger.debug("download end");
+		Logger.info("download end");
 
 		return ok;
 	}
@@ -123,7 +123,7 @@ public class MNOAAFTP
 			ftpClient.logout();
 			ftpClient.disconnect();
 
-			Logger.debug("Downloaded " + file + " : " + success);
+			Logger.info("Downloaded " + file + " : " + success);
 
 			return null;
 		}
@@ -131,7 +131,7 @@ public class MNOAAFTP
 
 	private ArrayList<MMetar> read()
 	{
-		Logger.debug("read begin");
+		Logger.info("read begin");
 
 		int processors = Runtime.getRuntime().availableProcessors();
 
@@ -169,7 +169,7 @@ public class MNOAAFTP
 			metars.add(metar);
 		});
 
-		Logger.debug("read end");
+		Logger.info("read end");
 
 		return metars;
 	}
