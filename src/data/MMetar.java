@@ -9,6 +9,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import util.MFormat;
+import util.MUnit;
 
 public class MMetar
 {
@@ -24,6 +25,12 @@ public class MMetar
 	private static final Pattern PATTERN_WEATHER = Pattern
 			.compile("(-|\\+|VC|RE)?(MI|BC|DR|BL|SH|TS|FZ)?(VCSH|RA|DZ|SN|SG|IC|PL|GR|GS|FG|BR|HZ|FU|VA|DU|SA|SQ|FC|SS|DS)$");
 	private static final Pattern PATTERN_NOT_DECODE = Pattern.compile("(?<=^<html>|</b>)(.*?)(?=<b>|</html>$)");
+
+	private static final Pattern PATTERN_REMARK_AUTOMATED_STATION_TYPES = Pattern.compile("RMK.*(AO[12])\\s");
+	private static final Pattern PATTERN_REMARK_SEA_LEVEL_PRESSURE = Pattern.compile("RMK.*(SLP\\d{3})\\s");
+	private static final Pattern PATTERN_REMARK_PRECISE_TEMPERATION = Pattern.compile("RMK.*(T\\d{8})\\s");
+	private static final Pattern PATTERN_REMARK_PRESSURE_TENDENCY = Pattern.compile("RMK.*(5\\d{4})\\s");
+	private static final Pattern PATTERN_REMARK_SENSOR = Pattern.compile("RMK.*(PWINO|RVRNO|VISNO|TSNO)\\s");
 
 	public String rawText;
 	public String stationId;
@@ -48,6 +55,26 @@ public class MMetar
 	public String weather;
 	public ArrayList<VLMetarCloud> clouds;
 
+	public class MRemark
+	{
+		public String field;
+		public String remark;
+
+		public MRemark(String _field, String _remark)
+		{
+			field = _field;
+			remark = _remark;
+		}
+
+		@Override
+		public String toString()
+		{
+			return field + ":" + remark;
+		}
+	}
+
+	public ArrayList<MRemark> remarks;
+
 	public String extraFlightCategory = "";
 
 	public String rawTextHighlight;
@@ -61,6 +88,7 @@ public class MMetar
 
 	private static final HashMap<String, String> COVERS = initCovers();
 	private static final HashMap<String, String> WEATHERS = initWeathers();
+	private static final HashMap<String, String> PRESSURE_TENDENCIES = initPressureTendencies();
 
 	private static HashMap<String, String> initCovers()
 	{
@@ -119,36 +147,48 @@ public class MMetar
 		return weathers;
 	}
 
+	private static HashMap<String, String> initPressureTendencies()
+	{
+		HashMap<String, String> pressureTendencies = new HashMap<String, String>();
+		pressureTendencies.put("0", "No change");
+		pressureTendencies.put("1", "Rising then falling");
+		pressureTendencies.put("2", "Rising then steady");
+		pressureTendencies.put("3", "Rising steadily");
+		pressureTendencies.put("4", "Rising rapidly");
+		pressureTendencies.put("5", "Falling then rising");
+		pressureTendencies.put("6", "Falling then steady");
+		pressureTendencies.put("7", "Falling steadily");
+		pressureTendencies.put("8", "Falling rapidly");
+		return pressureTendencies;
+	}
+
 	public MMetar(LocalDateTime _observationTime, String _raw, String _stationId)
 	{
-		observationTime = _observationTime;
-		rawText = _raw;
-		rawTextHighlight = "<html>" + rawText + "</html>";
+		init(_observationTime, _raw);
 		stationId = _stationId;
-
-		clouds = new ArrayList<MMetar.VLMetarCloud>();
 	}
 
 	public MMetar(LocalDateTime _observationTime, String _raw)
 	{
-		observationTime = _observationTime;
-		rawText = _raw;
-		rawTextHighlight = "<html>" + rawText + "</html>";
-
-		clouds = new ArrayList<MMetar.VLMetarCloud>();
+		init(_observationTime, _raw);
 	}
 
 	public MMetar(String[] _fields, String _values)
 	{
 		String[] values = _values.split(",");
-
-		rawText = values[0];
-		rawTextHighlight = "<html>" + rawText + "</html>";
+		init(LocalDateTime.parse(values[2].substring(0, values[2].length() - 1)), values[0]);
 		stationId = values[1];
-		observationTime = LocalDateTime.parse(values[2].substring(0, values[2].length() - 1));
 		extraFlightCategory = values[30];
+	}
+
+	private void init(LocalDateTime _observationTime, String _raw)
+	{
+		observationTime = _observationTime;
+		rawText = _raw;
+		rawTextHighlight = "<html>" + rawText + "</html>";
 
 		clouds = new ArrayList<MMetar.VLMetarCloud>();
+		remarks = new ArrayList<MMetar.MRemark>();
 	}
 
 	public String cloudToString()
@@ -207,6 +247,7 @@ public class MMetar
 		decodeWind(items);
 		decodeClouds(items);
 		decodeWeather(items);
+		decodeRemarks();
 
 		notDecoded();
 	}
@@ -266,14 +307,14 @@ public class MMetar
 				String speed = matcher.group(2);
 				windSpeedKt = Integer.parseInt(speed);
 				if (speedUnit.equals("MPS"))
-					windSpeedKt = mpsToKnots(windSpeedKt);
+					windSpeedKt = MUnit.mpsToKnots(windSpeedKt);
 
 				String gust = matcher.group(3);
 				if (gust != null)
 				{
 					windGustKt = Integer.parseInt(gust);
 					if (speedUnit.equals("MPS"))
-						windGustKt = mpsToKnots(windGustKt);
+						windGustKt = MUnit.mpsToKnots(windGustKt);
 				}
 				highLight(_items[i]);
 				break;
@@ -281,7 +322,7 @@ public class MMetar
 		}
 	}
 
-	public static double parseFractionalMiles(String _fraction)
+	private double parseFractionalMiles(String _fraction)
 	{
 		if (_fraction.contains("/"))
 		{
@@ -322,7 +363,7 @@ public class MMetar
 				if (rawVisibility != null)
 				{
 					visibilitySM = Integer.parseInt(rawVisibility);
-					visibilitySM = Math.round(10.0 * metersToSM(visibilitySM)) / 10.0;
+					visibilitySM = Math.round(10.0 * MUnit.metersToSM(visibilitySM)) / 10.0;
 					visibilityNonDirectionalVaration = rawVisibilityIndicator != null && rawVisibilityIndicator.equals("NDV");
 					highLight(rawVisibility + (rawVisibilityIndicator == null ? "" : rawVisibilityIndicator));
 				}
@@ -337,7 +378,7 @@ public class MMetar
 			if (rawVisibility != null)
 			{
 				visibilitySMExtra = Integer.parseInt(rawVisibility);
-				visibilitySMExtra = Math.round(10.0 * metersToSM(visibilitySMExtra)) / 10.0;
+				visibilitySMExtra = Math.round(10.0 * MUnit.metersToSM(visibilitySMExtra)) / 10.0;
 				if (rawVisibilityIndicator != null && rawVisibilityIndicator.equals("S"))
 					visibilityDirectionExtra = rawVisibilityIndicator;
 				highLight(rawVisibility + (rawVisibilityIndicator == null ? "" : rawVisibilityIndicator));
@@ -390,12 +431,12 @@ public class MMetar
 				if (rawAltimeterUnit.equals("Q"))
 				{
 					altimeterHpa = Integer.parseInt(rawAltimeter);
-					altimeterInHg = hPaToInHg(altimeterHpa);
+					altimeterInHg = MUnit.hPaToInHg(altimeterHpa);
 				}
 				else
 				{
 					altimeterInHg = Integer.parseInt(rawAltimeter) / 100.0;
-					altimeterHpa = inHgToHPa(altimeterInHg);
+					altimeterHpa = MUnit.inHgToHPa(altimeterInHg);
 				}
 				highLight(_items[i]);
 				return;
@@ -478,6 +519,98 @@ public class MMetar
 			weather = weather.substring(0, weather.length() - 2);
 	}
 
+	private void decodeRemarks()
+	{
+		Matcher matcher = PATTERN_REMARK_AUTOMATED_STATION_TYPES.matcher(rawText);
+		if (matcher.find())
+		{
+			String rawStationType = matcher.group(1);
+			String stationType = null;
+			if (rawStationType.equals("AO1"))
+				stationType = "Automated station without a precipitation sensor";
+			else if (rawStationType.equals("AO2"))
+				stationType = "Automated station with a precipitation sensor";
+			if (stationType != null)
+			{
+				remarks.add(new MRemark(rawStationType, stationType));
+				highLight(rawStationType);
+			}
+		}
+
+		matcher = PATTERN_REMARK_SEA_LEVEL_PRESSURE.matcher(rawText);
+		if (matcher.find())
+		{
+			String rawSeaLevelPressure = matcher.group(1);
+			double pressure = Double.parseDouble(rawSeaLevelPressure.substring(3));
+			if (pressure < 200.0)
+				pressure = pressure / 10.0 + 1000.0;
+			else
+				pressure = pressure / 10.0 + 900.0;
+			remarks.add(new MRemark(rawSeaLevelPressure, MFormat.instance.numberFormatDecimal1.format(pressure) + " hPa"));
+			highLight(rawSeaLevelPressure);
+		}
+
+		matcher = PATTERN_REMARK_PRECISE_TEMPERATION.matcher(rawText);
+		if (matcher.find())
+		{
+			String rawPreciseTemperature = matcher.group(1);
+			String temperatureSign = rawPreciseTemperature.substring(1, 2);
+			double temperature = Integer.parseInt(rawPreciseTemperature.substring(2, 5)) / 10.0;
+			if (temperatureSign.equals("1"))
+				temperature = -temperature;
+			String dewPointSign = rawPreciseTemperature.substring(5, 6);
+			double dewPoint = Integer.parseInt(rawPreciseTemperature.substring(6)) / 10.0;
+			if (dewPointSign.equals("1"))
+				dewPoint = -dewPoint;
+			remarks.add(
+					new MRemark(rawPreciseTemperature, "temperature=" + MFormat.instance.numberFormatDecimal1.format(temperature)
+							+ "°C" + ", dew point=" + MFormat.instance.numberFormatDecimal1.format(dewPoint) + "°C"));
+			highLight(rawPreciseTemperature);
+		}
+
+		matcher = PATTERN_REMARK_PRESSURE_TENDENCY.matcher(rawText);
+		if (matcher.find())
+		{
+			String rawPressureTendency = matcher.group(1);
+			String trend = rawPressureTendency.substring(1, 2);
+			String pressureSign = rawPressureTendency.substring(2, 3);
+			double pressure = Double.parseDouble(rawPressureTendency.substring(3)) / 10.0;
+			if (pressureSign.equals("1"))
+				pressure = -pressure;
+			remarks.add(new MRemark(rawPressureTendency, PRESSURE_TENDENCIES.get(trend) + ", " + pressure + " hPa change"));
+			highLight(rawPressureTendency);
+		}
+
+		matcher = PATTERN_REMARK_SENSOR.matcher(rawText);
+		while (matcher.find())
+		{
+			String rawSensor = matcher.group(1);
+			String sensor = null;
+			if (rawSensor.equals("PWINO"))
+				sensor = "Precipitation sensor not operational";
+			else if (rawSensor.equals("RVRNO"))
+				sensor = "Runway Visual Range sensor not operational";
+			else if (rawSensor.equals("VISNO"))
+				sensor = "Visibility sensor not operational";
+			else if (rawSensor.equals("TSNO"))
+				sensor = "Thunderstorm sensor not operational";
+			if (sensor != null)
+			{
+				remarks.add(new MRemark(rawSensor, sensor));
+				highLight(rawSensor);
+			}
+		}
+		
+		if (rawText.endsWith("$"))
+		{
+			remarks.add(new MRemark("$", "Maintenance needed at the station"));
+			highLight("$");
+		}
+
+		if (remarks.size() > 0)
+			highLight("RMK");
+	}
+
 	private void notDecoded()
 	{
 		Matcher matcher = PATTERN_NOT_DECODE.matcher(rawTextHighlight);
@@ -490,30 +623,5 @@ public class MMetar
 				break;
 			}
 		}
-	}
-
-	private int mpsToKnots(int _mps)
-	{
-		return (int) Math.round(_mps * 1.94384);
-	}
-
-	private double metersToSM(double _meters)
-	{
-		return _meters * 0.000621371;
-	}
-
-	static public double metersToFeet(double _meters)
-	{
-		return _meters * 3.28084;
-	}
-
-	private double hPaToInHg(double _hPa)
-	{
-		return Math.round(100.0 * _hPa / 33.864) / 100.0;
-	}
-
-	private double inHgToHPa(double _inHg)
-	{
-		return Math.round(_inHg * 33.864);
 	}
 }

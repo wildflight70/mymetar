@@ -19,6 +19,7 @@ public class MBottom extends JPanel
 	private JLabel labelAirportValue;
 	private JLabel labelCountryValue;
 	private JLabel labelCityValue;
+	private JLabel labelRemarksValue;
 
 	private HashMap<String, MCountry> countries;
 
@@ -79,6 +80,20 @@ public class MBottom extends JPanel
 		c.gridy = 0;
 		c.anchor = GridBagConstraints.LINE_START;
 		add(labelCityValue, c);
+
+		// Remarks
+		JLabel labelRemarks = new JLabel("Remarks");
+		c.gridx = 0;
+		c.gridy = 1;
+		c.anchor = GridBagConstraints.LINE_END;
+		add(labelRemarks, c);
+
+		labelRemarksValue = new JLabel("");
+		labelRemarksValue.setFont(boldFont);
+		c.gridx = 1;
+		c.gridy = 1;
+		c.anchor = GridBagConstraints.LINE_START;
+		add(labelRemarksValue, c);
 	}
 
 	public void update(MAirport _airport)
@@ -86,5 +101,7 @@ public class MBottom extends JPanel
 		labelAirportValue.setText(_airport.name);
 		labelCountryValue.setText(countries.get(_airport.country).toString());
 		labelCityValue.setText(_airport.city);
+		if (_airport.metar != null)
+			labelRemarksValue.setText(_airport.metar.remarks.toString());
 	}
 }

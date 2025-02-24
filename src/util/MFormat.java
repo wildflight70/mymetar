@@ -8,6 +8,7 @@ public class MFormat
 	public static MFormat instance = new MFormat();
 
 	public DecimalFormat numberFormatDecimal0;
+	public DecimalFormat numberFormatDecimal1;
 	public DecimalFormat numberFormatDecimal2;
 	public DecimalFormat numberFormatDecimal5;
 
@@ -18,6 +19,7 @@ public class MFormat
 		otherSymbols.setGroupingSeparator(' ');
 
 		numberFormatDecimal0 = new DecimalFormat("###,##0", otherSymbols);
+		numberFormatDecimal1 = new DecimalFormat("###,##0.0", otherSymbols);
 		numberFormatDecimal2 = new DecimalFormat("###,##0.00", otherSymbols);
 		numberFormatDecimal5 = new DecimalFormat("###,##0.00000", otherSymbols);
 	}
