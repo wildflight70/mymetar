@@ -12,6 +12,7 @@ public class MMetarDefinitions
 	public HashMap<String, String> automatedStationTypes;
 	public HashMap<String, String> sensors;
 	public HashMap<String, String> dataMissing;
+	public HashMap<String, String> runwayTrends;
 
 	private MMetarDefinitions()
 	{
@@ -21,6 +22,7 @@ public class MMetarDefinitions
 		initAutomatedStationTypes();
 		initSensors();
 		initDataMissing();
+		initRunwayTrends();
 	}
 
 	private void initCovers()
@@ -96,6 +98,7 @@ public class MMetarDefinitions
 		automatedStationTypes = new HashMap<String, String>();
 		automatedStationTypes.put("AO1", "Automated station without a precipitation sensor");
 		automatedStationTypes.put("AO2", "Automated station with a precipitation sensor");
+		automatedStationTypes.put("AO2A", "Automated station with a precipitation sensor");
 	}
 
 	private void initSensors()
@@ -106,7 +109,7 @@ public class MMetarDefinitions
 		sensors.put("VISNO", "Visibility sensor not operational");
 		sensors.put("TSNO", "Thunderstorm sensor not operational");
 	}
-	
+
 	private void initDataMissing()
 	{
 		dataMissing = new HashMap<String, String>();
@@ -120,5 +123,13 @@ public class MMetarDefinitions
 		dataMissing.put("DP MISG", "Dew point missing");
 		dataMissing.put("ICE MISG", "Icing missing");
 		dataMissing.put("DENSITY ALT MISG", "Density altitude missing");
+	}
+
+	private void initRunwayTrends()
+	{
+		runwayTrends = new HashMap<String, String>();
+		runwayTrends.put("D", "Down");
+		runwayTrends.put("U", "Up");
+		runwayTrends.put("N", "No change");
 	}
 }

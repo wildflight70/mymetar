@@ -418,12 +418,21 @@ public class MModel extends AbstractTableModel
 			}
 		}));
 
+		columns.put(col++, new MColumn("Runways", false, SwingConstants.LEFT, null, new MColumnValue()
+		{
+			@Override
+			public Object get(MAirport _airport)
+			{
+				return _airport.metar == null ? null : _airport.metar.runwaysToString();
+			}
+		}));
+
 		columns.put(col++, new MColumn("Auto", false, SwingConstants.CENTER, null, new MColumnValue()
 		{
 			@Override
 			public Object get(MAirport _airport)
 			{
-				return _airport.metar == null || !_airport.metar.auto ? null : true;
+				return _airport.metar == null || !_airport.metar.auto ? null : "o";
 			}
 		}));
 
@@ -432,7 +441,7 @@ public class MModel extends AbstractTableModel
 			@Override
 			public Object get(MAirport _airport)
 			{
-				return _airport.metar == null || !_airport.metar.noSignal ? null : true;
+				return _airport.metar == null || !_airport.metar.noSignal ? null : "o";
 			}
 		}));
 
@@ -441,7 +450,7 @@ public class MModel extends AbstractTableModel
 			@Override
 			public Object get(MAirport _airport)
 			{
-				return _airport.metar == null || !_airport.metar.correction ? null : true;
+				return _airport.metar == null || !_airport.metar.correction ? null : "o";
 			}
 		}));
 

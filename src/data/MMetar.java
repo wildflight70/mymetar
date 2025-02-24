@@ -23,15 +23,18 @@ public class MMetar
 			.compile("(CAVOK|CLR|SKC|NSC|NSW|NCD|FEW|SCT|BKN|OVC|VV)(\\d{2,3})?(CB|TCU)?");
 	private static final Pattern PATTERN_WEATHER = Pattern
 			.compile("(-|\\+|VC|RE)?(MI|BC|DR|BL|SH|TS|FZ)?(VCSH|RA|DZ|SN|SG|IC|PL|GR|GS|FG|BR|HZ|FU|VA|DU|SA|SQ|FC|SS|DS)$");
-	private static final Pattern PATTERN_NOT_DECODE = Pattern.compile("(?<=^<html>|</b>)(.*?)(?=<b>|</html>$)");
+	private static final Pattern PATTERN_RUNWAY_VISUAL_RANGE = Pattern
+			.compile("\s(R(\\d{2}[LCR]?)/([PM])?(\\d{4})(V(\\d{4}))?([UND])?)");
 
-	private static final Pattern PATTERN_REMARK_AUTOMATED_STATION_TYPES = Pattern.compile("RMK.*(AO[12])\\s");
+	private static final Pattern PATTERN_REMARK_AUTOMATED_STATION_TYPES = Pattern.compile("RMK.*(AO[12]A?)\\s");
 	private static final Pattern PATTERN_REMARK_SEA_LEVEL_PRESSURE = Pattern.compile("RMK.*(SLP\\d{3})\\s");
 	private static final Pattern PATTERN_REMARK_PRECISE_TEMPERATION = Pattern.compile("RMK.*(T\\d{8})\\s");
 	private static final Pattern PATTERN_REMARK_PRESSURE_TENDENCY = Pattern.compile("RMK.*(5\\d{4})");
 	private static final Pattern PATTERN_REMARK_SENSOR = Pattern.compile("(PWINO|RVRNO|VISNO|TSNO)\\s");
 	private static final Pattern PATTERN_REMARK_MISSING = Pattern
 			.compile("(WIND|CLD|WX|VIS|PCPN|PRES|DP|ICE|DENSITY\\sALT|T)\\sMISG");
+
+	private static final Pattern PATTERN_NOT_DECODE = Pattern.compile("(?<=^<html>|</b>)(.*?)(?=<b>|</html>$)");
 
 	public String rawText;
 	public String stationId;
@@ -54,7 +57,26 @@ public class MMetar
 	public int windFromDegree;
 	public int windToDegree;
 	public String weather;
-	public ArrayList<VLMetarCloud> clouds;
+	public ArrayList<MCloud> clouds;
+	public ArrayList<MRunway> runways;
+
+	public class MRunway
+	{
+		String runway;
+		String moreLess;
+		int minVisibility = -1;
+		int maxVisibility = -1;
+		String trend; // (U)p, (D)own, (N)o change
+
+		public MRunway(String _runway, String _moreLess, int _minVisibility, int _maxVisibility, String _trend)
+		{
+			runway = _runway;
+			moreLess = _moreLess;
+			minVisibility = _minVisibility;
+			maxVisibility = _maxVisibility;
+			trend = _trend;
+		}
+	}
 
 	public class MRemark
 	{
@@ -81,7 +103,7 @@ public class MMetar
 	public String rawTextHighlight;
 	public boolean notDecoded;
 
-	public class VLMetarCloud
+	public class MCloud
 	{
 		public String cover;
 		public int baseFeet = -1;
@@ -112,8 +134,9 @@ public class MMetar
 		rawText = _raw;
 		rawTextHighlight = "<html>" + rawText + "</html>";
 
-		clouds = new ArrayList<MMetar.VLMetarCloud>();
-		remarks = new ArrayList<MMetar.MRemark>();
+		clouds = new ArrayList<MCloud>();
+		runways = new ArrayList<MRunway>();
+		remarks = new ArrayList<MRemark>();
 	}
 
 	public String cloudToString()
@@ -121,7 +144,7 @@ public class MMetar
 		StringBuffer buffer = new StringBuffer();
 		for (int i = 0; i < clouds.size(); i++)
 		{
-			VLMetarCloud cloud = clouds.get(i);
+			MCloud cloud = clouds.get(i);
 			buffer.append(cloud.cover);
 
 			if (cloud.cover.equals("CAVOK") || cloud.cover.equals("CLR"))
@@ -134,6 +157,28 @@ public class MMetar
 			}
 
 			if (i < clouds.size() - 1)
+				buffer.append(", ");
+		}
+		return buffer.toString();
+	}
+
+	public String runwaysToString()
+	{
+		StringBuffer buffer = new StringBuffer();
+		for (int i = 0; i < runways.size(); i++)
+		{
+			MRunway runway = runways.get(i);
+			buffer.append(runway.runway);
+			buffer.append(":");
+			if (runway.moreLess != null)
+				buffer.append(runway.moreLess);
+			buffer.append(MFormat.instance.numberFormatDecimal0.format(runway.minVisibility) + "m");
+			if (runway.maxVisibility >= 0)
+				buffer.append(" to " + MFormat.instance.numberFormatDecimal0.format(runway.maxVisibility) + "m");
+			if (runway.trend != null)
+				buffer.append(" " + runway.trend);
+
+			if (i < runways.size() - 1)
 				buffer.append(", ");
 		}
 		return buffer.toString();
@@ -172,6 +217,7 @@ public class MMetar
 		decodeWind(items);
 		decodeClouds(items);
 		decodeWeather(items);
+		decodeRunwayVisualRange();
 		decodeRemarks();
 
 		notDecoded();
@@ -386,7 +432,7 @@ public class MMetar
 				String altitude = matcher.group(2);
 				String type = matcher.group(3);
 
-				VLMetarCloud cloud = new VLMetarCloud();
+				MCloud cloud = new MCloud();
 				cloud.cover = MMetarDefinitions.instance.covers.get(cloudType);
 				if (type != null)
 					cloud.cover += " " + type;
@@ -396,10 +442,10 @@ public class MMetar
 			}
 		}
 
-		Collections.sort(clouds, new Comparator<VLMetarCloud>()
+		Collections.sort(clouds, new Comparator<MCloud>()
 		{
 			@Override
-			public int compare(VLMetarCloud o1, VLMetarCloud o2)
+			public int compare(MCloud o1, MCloud o2)
 			{
 				return Integer.compare(o1.baseFeet, o2.baseFeet);
 			}
@@ -451,6 +497,36 @@ public class MMetar
 
 		if (!weather.isEmpty())
 			weather = weather.substring(0, weather.length() - 2);
+	}
+
+	private void decodeRunwayVisualRange()
+	{
+		Matcher matcher = PATTERN_RUNWAY_VISUAL_RANGE.matcher(rawText);
+		while (matcher.find())
+		{
+			String rawMatch = matcher.group(1);
+			String rawRunway = matcher.group(2);
+			String rawMoreLess = matcher.group(3);
+			String rawMinVisibility = matcher.group(4);
+			String rawMaxVisibility = matcher.group(6);
+			String rawTrend = matcher.group(7); // U, D, N
+
+			String moreLess = null;
+			if (rawMoreLess != null)
+				if (rawMoreLess.equals("P"))
+					moreLess = ">";
+				else if (rawMoreLess.equals("M"))
+					moreLess = "<";
+
+			int minVisibility = Integer.parseInt(rawMinVisibility);
+			int maxVisibility = rawMaxVisibility == null ? -1 : Integer.parseInt(rawMaxVisibility);
+			String trend = MMetarDefinitions.instance.runwayTrends.get(rawTrend);
+
+			MRunway runway = new MRunway(rawRunway, moreLess, minVisibility, maxVisibility, trend);
+			runways.add(runway);
+
+			highLight(rawMatch);
+		}
 	}
 
 	private void decodeRemarks()
