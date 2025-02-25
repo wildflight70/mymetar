@@ -20,6 +20,7 @@ import data.MNOAAFTP;
 import data.MOurAirports;
 import data.MXPlane;
 import data.MXPlaneAirport;
+import main.MColumn.MColumnValue;
 import util.MFormat;
 
 @SuppressWarnings("serial")
@@ -28,16 +29,12 @@ public class MModel extends AbstractTableModel
 	private ArrayList<MAirport> airports;
 	public List<MAirport> visibleAirports;
 
-	interface MColumnValue
-	{
-		public Object get(MAirport _airport);
-	}
-
 	public HashMap<Integer, MColumn> columns;
 
 	public int sortedColumn;
 	public boolean sortedAsc;
 	public boolean filterShowOnlyAirportsWithMetar;
+	public boolean filterNotDecodedMetars;
 	public MCountry filterCountry;
 
 	private int totalMetars;
@@ -405,7 +402,7 @@ public class MModel extends AbstractTableModel
 			@Override
 			public Object get(MAirport _airport)
 			{
-				return _airport.metar == null ? null : _airport.metar.cloudToString();
+				return _airport.metar == null ? null : _airport.metar.cloudsToString();
 			}
 		}));
 
@@ -418,12 +415,21 @@ public class MModel extends AbstractTableModel
 			}
 		}));
 
-		columns.put(col++, new MColumn("Runways", false, SwingConstants.LEFT, null, new MColumnValue()
+		columns.put(col++, new MColumn("Runway visual ranges", false, SwingConstants.LEFT, null, new MColumnValue()
 		{
 			@Override
 			public Object get(MAirport _airport)
 			{
-				return _airport.metar == null ? null : _airport.metar.runwaysToString();
+				return _airport.metar == null ? null : _airport.metar.runwayVisualRangesToString();
+			}
+		}));
+
+		columns.put(col++, new MColumn("Runway conditions", false, SwingConstants.LEFT, null, new MColumnValue()
+		{
+			@Override
+			public Object get(MAirport _airport)
+			{
+				return _airport.metar == null ? null : _airport.metar.runwayConditionsToString();
 			}
 		}));
 
@@ -557,6 +563,7 @@ public class MModel extends AbstractTableModel
 		visibleAirports.clear();
 
 		visibleAirports = airports.stream().filter(airport -> !filterShowOnlyAirportsWithMetar || airport.metar != null)
+				.filter(airport -> !filterNotDecodedMetars || (airport.metar != null && airport.metar.notDecoded))
 				.filter(airport -> filterCountry == null || airport.country.equals(filterCountry.code))
 				.collect(Collectors.toList());
 	}

@@ -298,9 +298,10 @@ public class MTable extends JTable
 		}
 	}
 
-	public void updateVisible(boolean _showOnlyAirportsWithMetar, MCountry _country)
+	public void updateVisible(boolean _showOnlyAirportsWithMetar, boolean _notDecodedMetars, MCountry _country)
 	{
 		model.filterShowOnlyAirportsWithMetar = _showOnlyAirportsWithMetar;
+		model.filterNotDecodedMetars = _notDecodedMetars;
 		model.filterCountry = _country.code.isEmpty() ? null : _country;
 		model.updateVisible();
 		model.fireTableDataChanged();

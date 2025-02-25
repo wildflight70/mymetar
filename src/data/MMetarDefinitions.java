@@ -13,6 +13,9 @@ public class MMetarDefinitions
 	public HashMap<String, String> sensors;
 	public HashMap<String, String> dataMissing;
 	public HashMap<String, String> runwayTrends;
+	public HashMap<String, String> runwayContaminationTypes;
+	public HashMap<String, String> runwayCoverages;
+	public HashMap<String, String> runwayBrakingActions;
 
 	private MMetarDefinitions()
 	{
@@ -23,6 +26,9 @@ public class MMetarDefinitions
 		initSensors();
 		initDataMissing();
 		initRunwayTrends();
+		initRunwayContaminationTypes();
+		initRunwayCoverages();
+		initRunwayBrakingActions();
 	}
 
 	private void initCovers()
@@ -131,5 +137,41 @@ public class MMetarDefinitions
 		runwayTrends.put("D", "Down");
 		runwayTrends.put("U", "Up");
 		runwayTrends.put("N", "No change");
+	}
+
+	private void initRunwayContaminationTypes()
+	{
+		runwayContaminationTypes = new HashMap<String, String>();
+		runwayContaminationTypes.put("0", "Clear and Dry");
+		runwayContaminationTypes.put("1", "Damp");
+		runwayContaminationTypes.put("2", "Wet or Water Patches");
+		runwayContaminationTypes.put("3", "Rime/Frost");
+		runwayContaminationTypes.put("4", "Dry Snow");
+		runwayContaminationTypes.put("5", "Wet Snow");
+		runwayContaminationTypes.put("6", "Slush");
+		runwayContaminationTypes.put("7", "Ice");
+		runwayContaminationTypes.put("8", "Compact Snow or Ice");
+		runwayContaminationTypes.put("9", "Frozen Ruts or Snowdrifts");
+	}
+
+	private void initRunwayCoverages()
+	{
+		runwayCoverages = new HashMap<String, String>();
+		runwayCoverages.put("0", "10% or less");
+		runwayCoverages.put("1", "11-25%");
+		runwayCoverages.put("2", "26-50%");
+		runwayCoverages.put("5", "51-100%");
+		runwayCoverages.put("9", "51-100%");
+	}
+
+	private void initRunwayBrakingActions()
+	{
+		runwayBrakingActions = new HashMap<String, String>();
+		runwayBrakingActions.put("00", "Runway closed");
+		runwayBrakingActions.put("91", "Poor to Medium");
+		runwayBrakingActions.put("92", "Medium");
+		runwayBrakingActions.put("93", "Medium to Good");
+		runwayBrakingActions.put("94", "Good");
+		runwayBrakingActions.put("99", "Runway not operational");
 	}
 }

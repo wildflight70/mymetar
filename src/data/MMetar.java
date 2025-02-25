@@ -25,11 +25,13 @@ public class MMetar
 			.compile("(-|\\+|VC|RE)?(MI|BC|DR|BL|SH|TS|FZ)?(VCSH|RA|DZ|SN|SG|IC|PL|GR|GS|FG|BR|HZ|FU|VA|DU|SA|SQ|FC|SS|DS)$");
 	private static final Pattern PATTERN_RUNWAY_VISUAL_RANGE = Pattern
 			.compile("\\b(R(\\d{2}[LCR]?)/([PM])?(\\d{4})(V(\\d{4}))?([UND])?)\\b");
-	private static final Pattern PATTERN_RUNWAY_VISUAL_RANGE_MISSING = Pattern.compile("\\b(R(\\d{2}[LCR]?)//{2,})\\b");
+	private static final Pattern PATTERN_RUNWAY_VISUAL_RANGE_MISSING = Pattern.compile("\\b(R(\\d{2}[LCR]?)//{2,})");
+	private static final Pattern PATTERN_RUNWAY_CONDITIONS = Pattern
+			.compile("\\b(R(\\d{2}[LCR]?)/(\\d)(\\d)(\\d{2})(\\d{2}))\\b");
 
-	private static final Pattern PATTERN_REMARK_AUTOMATED_STATION_TYPES = Pattern.compile("RMK.*(AO[12]A?)\\s");
-	private static final Pattern PATTERN_REMARK_SEA_LEVEL_PRESSURE = Pattern.compile("RMK.*(SLP\\d{3})\\s");
-	private static final Pattern PATTERN_REMARK_PRECISE_TEMPERATION = Pattern.compile("RMK.*(T\\d{8})\\s");
+	private static final Pattern PATTERN_REMARK_AUTOMATED_STATION_TYPES = Pattern.compile("RMK.*(AO[12]A?)");
+	private static final Pattern PATTERN_REMARK_SEA_LEVEL_PRESSURE = Pattern.compile("RMK.*(SLP\\d{3})");
+	private static final Pattern PATTERN_REMARK_PRECISE_TEMPERATURE = Pattern.compile("RMK.*(T\\d{8})");
 	private static final Pattern PATTERN_REMARK_PRESSURE_TENDENCY = Pattern.compile("RMK.*(5\\d{4})");
 	private static final Pattern PATTERN_REMARK_SENSOR = Pattern.compile("(PWINO|RVRNO|VISNO|TSNO)\\s");
 	private static final Pattern PATTERN_REMARK_MISSING = Pattern
@@ -59,23 +61,47 @@ public class MMetar
 	public int windToDegree;
 	public String weather;
 	public ArrayList<MCloud> clouds;
-	public ArrayList<MRunway> runways;
+	public ArrayList<MRunwayVisualRange> runwayVisualRanges;
+	public ArrayList<MRunwayCondition> runwayConditions;
 
-	public class MRunway
+	private String cloudsString;
+	private String runwayVisualRangesString;
+	private String runwayConditionsString;
+
+	public class MRunwayVisualRange
 	{
 		String runway;
-		String moreLess;
+		String moreLess; // null, <, >
 		int minVisibility = -1;
 		int maxVisibility = -1;
-		String trend; // (U)p, (D)own, (N)o change
+		String trend; // null, (U)p, (D)own, (N)o change
 
-		public MRunway(String _runway, String _moreLess, int _minVisibility, int _maxVisibility, String _trend)
+		public MRunwayVisualRange(String _runway, String _moreLess, int _minVisibility, int _maxVisibility, String _trend)
 		{
 			runway = _runway;
 			moreLess = _moreLess;
 			minVisibility = _minVisibility;
 			maxVisibility = _maxVisibility;
 			trend = _trend;
+		}
+	}
+
+	public class MRunwayCondition
+	{
+		String runway;
+		String contaminationType;
+		String coverage;
+		int depth;
+		String brakinkAction;
+
+		public MRunwayCondition(String _runway, String _contaminationType, String _coverage, int _depth,
+				String _brakingAction)
+		{
+			runway = _runway;
+			contaminationType = _contaminationType;
+			coverage = _coverage;
+			depth = _depth;
+			brakinkAction = _brakingAction;
 		}
 	}
 
@@ -136,59 +162,94 @@ public class MMetar
 		rawTextHighlight = "<html>" + rawText + "</html>";
 
 		clouds = new ArrayList<MCloud>();
-		runways = new ArrayList<MRunway>();
+		runwayVisualRanges = new ArrayList<MRunwayVisualRange>();
+		runwayConditions = new ArrayList<MRunwayCondition>();
 		remarks = new ArrayList<MRemark>();
 	}
 
-	public String cloudToString()
+	public String cloudsToString()
 	{
-		StringBuffer buffer = new StringBuffer();
-		for (int i = 0; i < clouds.size(); i++)
+		if (cloudsString == null)
 		{
-			MCloud cloud = clouds.get(i);
-			buffer.append(cloud.cover);
-
-			if (cloud.cover.equals("CAVOK") || cloud.cover.equals("CLR"))
-				continue;
-
-			if (cloud.baseFeet >= 0)
+			StringBuffer buffer = new StringBuffer();
+			for (int i = 0; i < clouds.size(); i++)
 			{
-				buffer.append(" at ");
-				buffer.append(MFormat.instance.numberFormatDecimal0.format(cloud.baseFeet));
-			}
+				MCloud cloud = clouds.get(i);
+				buffer.append(cloud.cover);
 
-			if (i < clouds.size() - 1)
-				buffer.append(", ");
-		}
-		return buffer.toString();
-	}
+				if (cloud.cover.equals("CAVOK") || cloud.cover.equals("CLR"))
+					continue;
 
-	public String runwaysToString()
-	{
-		StringBuffer buffer = new StringBuffer();
-		for (int i = 0; i < runways.size(); i++)
-		{
-			MRunway runway = runways.get(i);
-			buffer.append(runway.runway);
-			buffer.append(":");
+				if (cloud.baseFeet >= 0)
+				{
+					buffer.append(" at ");
+					buffer.append(MFormat.instance.numberFormatDecimal0.format(cloud.baseFeet));
+				}
 
-			if (runway.minVisibility < 0 && runway.maxVisibility < 0)
-				buffer.append("missing");
-			else
-			{
-				if (runway.moreLess != null)
-					buffer.append(runway.moreLess);
-				buffer.append(MFormat.instance.numberFormatDecimal0.format(runway.minVisibility) + "m");
-				if (runway.maxVisibility >= 0)
-					buffer.append(" to " + MFormat.instance.numberFormatDecimal0.format(runway.maxVisibility) + "m");
-				if (runway.trend != null)
-					buffer.append(" " + runway.trend);
-
-				if (i < runways.size() - 1)
+				if (i < clouds.size() - 1)
 					buffer.append(", ");
 			}
+			cloudsString = buffer.toString();
 		}
-		return buffer.toString();
+		return cloudsString;
+	}
+
+	public String runwayVisualRangesToString()
+	{
+		if (runwayVisualRangesString == null)
+		{
+			StringBuffer buffer = new StringBuffer();
+			for (int i = 0; i < runwayVisualRanges.size(); i++)
+			{
+				MRunwayVisualRange runwayVisualRange = runwayVisualRanges.get(i);
+				buffer.append(runwayVisualRange.runway);
+				buffer.append(":");
+
+				if (runwayVisualRange.minVisibility < 0 && runwayVisualRange.maxVisibility < 0)
+					buffer.append("missing");
+				else
+				{
+					if (runwayVisualRange.moreLess != null)
+						buffer.append(runwayVisualRange.moreLess);
+					buffer.append(MFormat.instance.numberFormatDecimal0.format(runwayVisualRange.minVisibility) + "m");
+					if (runwayVisualRange.maxVisibility >= 0)
+						buffer.append(" to " + MFormat.instance.numberFormatDecimal0.format(runwayVisualRange.maxVisibility) + "m");
+					if (runwayVisualRange.trend != null)
+						buffer.append(" " + runwayVisualRange.trend);
+
+					if (i < runwayVisualRanges.size() - 1)
+						buffer.append(", ");
+				}
+			}
+			runwayVisualRangesString = buffer.toString();
+		}
+		return runwayVisualRangesString;
+	}
+
+	public String runwayConditionsToString()
+	{
+		if (runwayConditionsString == null)
+		{
+			StringBuffer buffer = new StringBuffer();
+			for (int i = 0; i < runwayConditions.size(); i++)
+			{
+				MRunwayCondition runwayCondition = runwayConditions.get(i);
+				buffer.append(runwayCondition.runway);
+				buffer.append(":");
+				buffer.append(runwayCondition.contaminationType);
+				buffer.append(";");
+				buffer.append(runwayCondition.coverage);
+				buffer.append(";");
+				buffer.append(runwayCondition.depth + "mm");
+				buffer.append(";");
+				buffer.append(runwayCondition.brakinkAction);
+
+				if (i < runwayConditions.size() - 1)
+					buffer.append(", ");
+			}
+			runwayConditionsString = buffer.toString();
+		}
+		return runwayConditionsString;
 	}
 
 	public String write()
@@ -225,6 +286,7 @@ public class MMetar
 		decodeClouds(items);
 		decodeWeather(items);
 		decodeRunwayVisualRange();
+		decodeRunwayConditions();
 		decodeRemarks();
 
 		notDecoded();
@@ -529,8 +591,9 @@ public class MMetar
 			int maxVisibility = rawMaxVisibility == null ? -1 : Integer.parseInt(rawMaxVisibility);
 			String trend = MMetarDefinitions.instance.runwayTrends.get(rawTrend);
 
-			MRunway runway = new MRunway(rawRunway, moreLess, minVisibility, maxVisibility, trend);
-			runways.add(runway);
+			MRunwayVisualRange runwayVisualRange = new MRunwayVisualRange(rawRunway, moreLess, minVisibility, maxVisibility,
+					trend);
+			runwayVisualRanges.add(runwayVisualRange);
 
 			highLight(rawMatch);
 		}
@@ -541,8 +604,40 @@ public class MMetar
 			String rawMatch = matcher.group(1);
 			String rawRunway = matcher.group(2);
 
-			MRunway runway = new MRunway(rawRunway, null, -1, -1, null);
-			runways.add(runway);
+			MRunwayVisualRange runwayVisualRange = new MRunwayVisualRange(rawRunway, null, -1, -1, null);
+			runwayVisualRanges.add(runwayVisualRange);
+
+			highLight(rawMatch);
+		}
+	}
+
+	private void decodeRunwayConditions()
+	{
+		Matcher matcher = PATTERN_RUNWAY_CONDITIONS.matcher(rawText);
+		while (matcher.find())
+		{
+			String rawMatch = matcher.group(1);
+			String rawRunway = matcher.group(2);
+			String rawContaminationType = matcher.group(3);
+			String rawCoverage = matcher.group(4);
+			String rawDepth = matcher.group(5);
+			String rawBrakingAction = matcher.group(6);
+
+			String contaminationType = MMetarDefinitions.instance.runwayContaminationTypes.get(rawContaminationType);
+			String coverage = MMetarDefinitions.instance.runwayCoverages.get(rawCoverage);
+			int depth = Integer.parseInt(rawDepth);
+			String brakingAction = MMetarDefinitions.instance.runwayBrakingActions.get(rawBrakingAction);
+			if (brakingAction == null)
+			{
+				double brakingCoefficient = Double.parseDouble(rawBrakingAction);
+				if (brakingCoefficient >= 10.0 && brakingCoefficient <= 90.0)
+					brakingCoefficient /= 10.0;
+				brakingAction = MFormat.instance.numberFormatDecimal1.format(brakingCoefficient);
+			}
+
+			MRunwayCondition runwayCondition = new MRunwayCondition(rawRunway, contaminationType, coverage, depth,
+					brakingAction);
+			runwayConditions.add(runwayCondition);
 
 			highLight(rawMatch);
 		}
@@ -579,7 +674,7 @@ public class MMetar
 				highLight(rawSeaLevelPressure);
 			}
 
-			matcher = PATTERN_REMARK_PRECISE_TEMPERATION.matcher(rawText);
+			matcher = PATTERN_REMARK_PRECISE_TEMPERATURE.matcher(rawText);
 			if (matcher.find())
 			{
 				String rawPreciseTemperature = matcher.group(1);
@@ -659,15 +754,15 @@ public class MMetar
 
 	public static void main(String[] args)
 	{
-		String metar = "CBBC 220900Z AUTO /////KT RMK WIND MISG CLD MISG WX MISG VIS MISG PCPN MISG PRES MISG T MISG DP MISG ICE MISG DENSITY ALT MISG";
-		String pattern = "(WIND|CLD|WX|VIS|PCPN|PRES|T|DP|ICE|DENSITY\\sALT)\\sMISG";
+		String metar = "URSS 220930Z 12005MPS 9999 SCT030CB SCT120 03/M04 Q1024 WS R06 R06/010070 R02/////// NOSIG RMK R02/13004G07MPS MT OBSC QFE767";
+		String pattern = "\\bR(\\d{2}[LCR]?)//{2,}";
 
 		Pattern regex = Pattern.compile(pattern);
 		Matcher matcher = regex.matcher(metar);
 
 		while (matcher.find())
 		{
-			System.out.println("Missing data: " + matcher.group(1));
+			System.out.println("Matched: " + matcher.group(1));
 		}
 	}
 }

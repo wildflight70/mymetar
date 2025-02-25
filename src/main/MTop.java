@@ -94,10 +94,23 @@ public class MTop extends JPanel
 		c.anchor = GridBagConstraints.LINE_START;
 		panel.add(checkAirportsWithMetar, c);
 
+		// Not decoded METARs
+		JLabel labelNotDecodedMetars = new JLabel("Not decoded METARs");
+		c.gridx = 0;
+		c.gridy = 1;
+		c.anchor = GridBagConstraints.LINE_END;
+		panel.add(labelNotDecodedMetars, c);
+
+		JCheckBox checkNotDecodedMetars = new JCheckBox();
+		c.gridx = 1;
+		c.gridy = 1;
+		c.anchor = GridBagConstraints.LINE_START;
+		panel.add(checkNotDecodedMetars, c);
+
 		// Country
 		JLabel labelCountry = new JLabel("Country");
 		c.gridx = 0;
-		c.gridy = 1;
+		c.gridy = 2;
 		c.anchor = GridBagConstraints.LINE_END;
 		panel.add(labelCountry, c);
 
@@ -114,29 +127,24 @@ public class MTop extends JPanel
 		});
 		JComboBox<MCountry> comboCountry = new JComboBox<MCountry>(countries);
 		c.gridx = 1;
-		c.gridy = 1;
+		c.gridy = 2;
 		c.anchor = GridBagConstraints.LINE_END;
 		panel.add(comboCountry, c);
 
-		comboCountry.addActionListener(new ActionListener()
+		// Listeners
+		ActionListener actionListener = new ActionListener()
 		{
 			@Override
 			public void actionPerformed(ActionEvent e)
 			{
-				table.updateVisible(checkAirportsWithMetar.isSelected(), (MCountry) comboCountry.getSelectedItem());
+				table.updateVisible(checkAirportsWithMetar.isSelected(), checkNotDecodedMetars.isSelected(),
+						(MCountry) comboCountry.getSelectedItem());
 				table.updateTop();
 			}
-		});
-
-		checkAirportsWithMetar.addActionListener(new ActionListener()
-		{
-			@Override
-			public void actionPerformed(ActionEvent e)
-			{
-				table.updateVisible(checkAirportsWithMetar.isSelected(), (MCountry) comboCountry.getSelectedItem());
-				table.updateTop();
-			}
-		});
+		};
+		comboCountry.addActionListener(actionListener);
+		checkAirportsWithMetar.addActionListener(actionListener);
+		checkNotDecodedMetars.addActionListener(actionListener);
 
 		return panel;
 	}
