@@ -1,17 +1,11 @@
 package data;
 
-import java.awt.Color;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import javax.swing.JFrame;
-import javax.swing.JPanel;
-import javax.swing.JSplitPane;
-import javax.swing.SwingUtilities;
 
 import util.MFormat;
 import util.MUnit;
@@ -35,13 +29,16 @@ public class MMetar
 	private static final Pattern PATTERN_RUNWAY_CONDITIONS = Pattern
 			.compile("\\b(R(\\d{2}[LCR]?)/(\\d)(\\d)(\\d{2})(\\d{2}))\\b");
 
-	private static final Pattern PATTERN_REMARK_AUTOMATED_STATION_TYPES = Pattern.compile("RMK.*(AO[12]A?)");
+	private static final Pattern PATTERN_REMARK_AUTOMATED_STATION_TYPES = Pattern.compile("RMK.*(A[O0][12]A?)");
 	private static final Pattern PATTERN_REMARK_SEA_LEVEL_PRESSURE = Pattern.compile("RMK.*(SLP\\d{3})");
 	private static final Pattern PATTERN_REMARK_PRECISE_TEMPERATURE = Pattern.compile("RMK.*(T\\d{8})");
 	private static final Pattern PATTERN_REMARK_PRESSURE_TENDENCY = Pattern.compile("RMK.*(5\\d{4})");
-	private static final Pattern PATTERN_REMARK_SENSOR = Pattern.compile("(PWINO|RVRNO|VISNO|TSNO)\\s");
+	private static final Pattern PATTERN_REMARK_SENSOR = Pattern.compile("\\b(PWINO|RVRNO|VISNO|TSNO|FZRANO)");
 	private static final Pattern PATTERN_REMARK_MISSING = Pattern
 			.compile("(WIND|CLD|WX|VIS|PCPN|PRES|DP|ICE|DENSITY\\sALT|T)\\sMISG");
+//	private static final Pattern PATTERN_REMARK_SKY_COVERAGE = Pattern.compile("RMK.*\\b([A-Z]{2}\\d){2,}\\b");
+	private static final Pattern PATTERN_REMARK_SKY_COVERAGE = Pattern
+			.compile("RMK.*\\b((AC|AS|CI|CS|FG|HZ|NS|SC|SF|SN|ST)\\d){1,}\\b");
 
 	private static final Pattern PATTERN_NOT_DECODE = Pattern.compile("(?<=^<html>|</b>)(.*?)(?=<b>|</html>$)");
 
@@ -651,9 +648,9 @@ public class MMetar
 
 	private void decodeRemarks()
 	{
-		if (rawText.contains(" RMK"))
+		if (rawText.contains("RMK"))
 		{
-			highLight(" RMK");
+			highLight("RMK");
 
 			Matcher matcher = PATTERN_REMARK_AUTOMATED_STATION_TYPES.matcher(rawText);
 			if (matcher.find())
@@ -737,6 +734,13 @@ public class MMetar
 				}
 			}
 
+			matcher = PATTERN_REMARK_SKY_COVERAGE.matcher(rawText);
+			while (matcher.find())
+			{
+				String rawMatch = matcher.group();
+				highLight(rawMatch.substring(4));
+			}
+
 			if (rawText.endsWith(" $"))
 			{
 				remarks.add(new MRemark("$", "Maintenance needed at the station"));
@@ -761,30 +765,28 @@ public class MMetar
 
 	public static void main(String[] args)
 	{
-		// Create the main frame
-		JFrame frame = new JFrame("JSplitPane Example");
-		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		frame.setSize(500, 300);
+		// Sample METARs
+		String[] metars = { "CYAB 211733Z 06002KT RMK SN1SC1CI6 ICE SLP873", // Should match (ICE present)
+				"CYAM 220900Z 22009G19KT RMK ICE MISG SLP183", // Should NOT match (ICE MISG)
+				"CYAS 212200Z 28017G24KT RMK SC1AS4CI3 ICE TR", // Should match (ICE present)
+				"UUBC 220930Z RMK QFE760/1014" // Should NOT match (No ICE)
+		};
 
-		// Create two panels to put in the split pane
-		JPanel leftPanel = new JPanel();
-		leftPanel.setBackground(Color.RED);
-		JPanel rightPanel = new JPanel();
-		rightPanel.setBackground(Color.BLUE);
+		// Regex to find "ICE" after RMK
+		Pattern pattern = Pattern.compile("RMK.*?\\bICE\\b");
 
-		// Create the split pane with horizontal orientation
-		JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, leftPanel, rightPanel);
-
-		// Add the split pane to the frame
-		frame.getContentPane().add(splitPane);
-
-		// SwingUtilities.invokeLater(() ->
+		for (String metar : metars)
 		{
-			frame.setVisible(true);
-			// Set the divider location to 50% of the total size (middle)
-			splitPane.setDividerLocation(0.5);
+			Matcher matcher = pattern.matcher(metar);
+			while (matcher.find())
+			{
+				String match = matcher.group();
+				// Exclude "ICE MISG"
+				if (!match.contains("ICE MISG"))
+				{
+					System.out.println("Matched: " + match + " in METAR: " + metar);
+				}
+			}
 		}
-
-		// Display the frame
 	}
 }

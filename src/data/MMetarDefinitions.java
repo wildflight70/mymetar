@@ -102,6 +102,7 @@ public class MMetarDefinitions
 	private void initAutomatedStationTypes()
 	{
 		automatedStationTypes = new HashMap<String, String>();
+		automatedStationTypes.put("A01", "Automated station without a precipitation sensor");
 		automatedStationTypes.put("AO1", "Automated station without a precipitation sensor");
 		automatedStationTypes.put("AO2", "Automated station with a precipitation sensor");
 		automatedStationTypes.put("AO2A", "Automated station with a precipitation sensor");
@@ -114,6 +115,7 @@ public class MMetarDefinitions
 		sensors.put("RVRNO", "Runway Visual Range sensor not operational");
 		sensors.put("VISNO", "Visibility sensor not operational");
 		sensors.put("TSNO", "Thunderstorm sensor not operational");
+		sensors.put("FZRANO", "Thunderstorm sensor not operational");
 	}
 
 	private void initDataMissing()
