@@ -75,8 +75,8 @@ public class MTop extends JPanel
 	private JPanel createFilter()
 	{
 		JPanel panel = new JPanel(new GridBagLayout());
-		Border boder = BorderFactory.createTitledBorder("Filter");
-		panel.setBorder(boder);
+		Border border = BorderFactory.createTitledBorder("Filter");
+		panel.setBorder(border);
 
 		GridBagConstraints c = new GridBagConstraints();
 		c.insets = new Insets(2, 2, 2, 2);
@@ -152,8 +152,8 @@ public class MTop extends JPanel
 	private JPanel createSearch()
 	{
 		JPanel panel = new JPanel(new GridBagLayout());
-		Border boder = BorderFactory.createTitledBorder("Search");
-		panel.setBorder(boder);
+		Border border = BorderFactory.createTitledBorder("Search");
+		panel.setBorder(border);
 
 		GridBagConstraints c = new GridBagConstraints();
 		c.insets = new Insets(2, 2, 2, 2);
@@ -187,8 +187,8 @@ public class MTop extends JPanel
 	private JPanel createCount()
 	{
 		JPanel panel = new JPanel(new GridBagLayout());
-		Border boder = BorderFactory.createTitledBorder("Count");
-		panel.setBorder(boder);
+		Border border = BorderFactory.createTitledBorder("Count");
+		panel.setBorder(border);
 
 		GridBagConstraints c = new GridBagConstraints();
 		c.insets = new Insets(2, 2, 2, 2);

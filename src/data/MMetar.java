@@ -1,11 +1,17 @@
 package data;
 
+import java.awt.Color;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import javax.swing.JFrame;
+import javax.swing.JPanel;
+import javax.swing.JSplitPane;
+import javax.swing.SwingUtilities;
 
 import util.MFormat;
 import util.MUnit;
@@ -670,7 +676,8 @@ public class MMetar
 					pressure = pressure / 10.0 + 1000.0;
 				else
 					pressure = pressure / 10.0 + 900.0;
-				remarks.add(new MRemark(rawSeaLevelPressure, MFormat.instance.numberFormatDecimal1.format(pressure) + " hPa"));
+				remarks.add(new MRemark(rawSeaLevelPressure,
+						"Sea level pressure=" + MFormat.instance.numberFormatDecimal1.format(pressure) + " hPa"));
 				highLight(rawSeaLevelPressure);
 			}
 
@@ -687,7 +694,7 @@ public class MMetar
 				if (dewPointSign.equals("1"))
 					dewPoint = -dewPoint;
 				remarks.add(new MRemark(rawPreciseTemperature,
-						"temperature=" + MFormat.instance.numberFormatDecimal1.format(temperature) + "°C" + ", dew point="
+						"Precise temperature=" + MFormat.instance.numberFormatDecimal1.format(temperature) + "°C" + ", dew point="
 								+ MFormat.instance.numberFormatDecimal1.format(dewPoint) + "°C"));
 				highLight(rawPreciseTemperature);
 			}
@@ -701,8 +708,8 @@ public class MMetar
 				double pressure = Double.parseDouble(rawPressureTendency.substring(3)) / 10.0;
 				if (pressureSign.equals("1"))
 					pressure = -pressure;
-				remarks.add(new MRemark(rawPressureTendency,
-						MMetarDefinitions.instance.pressureTendencies.get(trend) + ", " + pressure + " hPa change"));
+				remarks.add(new MRemark(rawPressureTendency, "Pressure tendency="
+						+ MMetarDefinitions.instance.pressureTendencies.get(trend) + ", " + pressure + " hPa change"));
 				highLight(rawPressureTendency);
 			}
 
@@ -754,15 +761,30 @@ public class MMetar
 
 	public static void main(String[] args)
 	{
-		String metar = "URSS 220930Z 12005MPS 9999 SCT030CB SCT120 03/M04 Q1024 WS R06 R06/010070 R02/////// NOSIG RMK R02/13004G07MPS MT OBSC QFE767";
-		String pattern = "\\bR(\\d{2}[LCR]?)//{2,}";
+		// Create the main frame
+		JFrame frame = new JFrame("JSplitPane Example");
+		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		frame.setSize(500, 300);
 
-		Pattern regex = Pattern.compile(pattern);
-		Matcher matcher = regex.matcher(metar);
+		// Create two panels to put in the split pane
+		JPanel leftPanel = new JPanel();
+		leftPanel.setBackground(Color.RED);
+		JPanel rightPanel = new JPanel();
+		rightPanel.setBackground(Color.BLUE);
 
-		while (matcher.find())
+		// Create the split pane with horizontal orientation
+		JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, leftPanel, rightPanel);
+
+		// Add the split pane to the frame
+		frame.getContentPane().add(splitPane);
+
+		// SwingUtilities.invokeLater(() ->
 		{
-			System.out.println("Matched: " + matcher.group(1));
+			frame.setVisible(true);
+			// Set the divider location to 50% of the total size (middle)
+			splitPane.setDividerLocation(0.5);
 		}
+
+		// Display the frame
 	}
 }
