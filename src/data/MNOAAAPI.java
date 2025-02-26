@@ -209,7 +209,7 @@ public class MNOAAAPI
 						int p = rawText.indexOf(" ");
 						String stationId = rawText.substring(0, p);
 
-						MMetar metar = new MMetar(observationTime, stationId);
+						MMetar metar = new MMetar(observationTime, rawText, stationId);
 						metar.extraFlightCategory = flightCategory;
 
 						metars.put(stationId, metar);

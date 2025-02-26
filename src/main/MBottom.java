@@ -3,7 +3,6 @@ package main;
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Dimension;
-import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -46,13 +45,26 @@ public class MBottom extends JPanel
 		MOurAirports ourAirports = new MOurAirports();
 		countries = ourAirports.loadCountries();
 
-		setLayout(new FlowLayout(FlowLayout.LEFT));
-		
+		JPanel panel = new JPanel(new GridBagLayout());
+
+		GridBagConstraints c = new GridBagConstraints();
+		c.insets = new Insets(2, 2, 2, 2);
+
 		JPanel remarks = createRemarks();
-		add(remarks);
-		
+		c.gridx = 0;
+		c.gridy = 0;
+		c.anchor = GridBagConstraints.FIRST_LINE_START;
+		panel.add(remarks, c);
+
 		JPanel airport = createAirport();
-		add(airport);
+		c.gridx = 1;
+		c.gridy = 0;
+		c.anchor = GridBagConstraints.FIRST_LINE_START;
+		c.weightx = 1.0;
+		panel.add(airport, c);
+
+		setLayout(new BorderLayout());
+		add(panel, BorderLayout.NORTH);
 	}
 
 	private JPanel createAirport()
@@ -80,29 +92,29 @@ public class MBottom extends JPanel
 
 		// Country
 		JLabel labelCountry = new JLabel("Country");
-		c.gridx = 2;
-		c.gridy = 0;
+		c.gridx = 0;
+		c.gridy = 1;
 		c.anchor = GridBagConstraints.LINE_END;
 		panel.add(labelCountry, c);
 
 		labelCountryValue = new JLabel("");
 		labelCountryValue.setFont(boldFont);
-		c.gridx = 3;
-		c.gridy = 0;
+		c.gridx = 1;
+		c.gridy = 1;
 		c.anchor = GridBagConstraints.LINE_START;
 		panel.add(labelCountryValue, c);
 
 		// City
 		JLabel labelCity = new JLabel("City");
-		c.gridx = 4;
-		c.gridy = 0;
+		c.gridx = 0;
+		c.gridy = 2;
 		c.anchor = GridBagConstraints.LINE_END;
 		panel.add(labelCity, c);
 
 		labelCityValue = new JLabel("");
 		labelCityValue.setFont(boldFont);
-		c.gridx = 5;
-		c.gridy = 0;
+		c.gridx = 1;
+		c.gridy = 2;
 		c.anchor = GridBagConstraints.LINE_START;
 		panel.add(labelCityValue, c);
 

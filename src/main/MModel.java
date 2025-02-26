@@ -201,7 +201,7 @@ public class MModel extends AbstractTableModel
 			}
 		}));
 
-		columns.put(col++, new MColumn("Altimeter (inHg/hPa)", false, SwingConstants.RIGHT, new Comparator<MAirport>()
+		columns.put(col++, new MColumn("Sea level pressure (hPa)", false, SwingConstants.RIGHT, new Comparator<MAirport>()
 		{
 			@Override
 			public int compare(MAirport o1, MAirport o2)
@@ -212,7 +212,7 @@ public class MModel extends AbstractTableModel
 				else if (o2.metar == null)
 					c = 1;
 				else
-					c = Double.compare(o1.metar.altimeterHpa, o2.metar.altimeterHpa);
+					c = Double.compare(o1.metar.seaLevelPressureHpa, o2.metar.seaLevelPressureHpa);
 				if (!sortedAsc)
 					c = -c;
 				return c;
@@ -222,11 +222,38 @@ public class MModel extends AbstractTableModel
 			@Override
 			public Object get(MAirport _airport)
 			{
-				if (_airport.metar == null || _airport.metar.altimeterInHg == 0)
+				if (_airport.metar == null || _airport.metar.seaLevelPressureHpa < 0)
 					return null;
 				else
-					return MFormat.instance.numberFormatDecimal2.format(_airport.metar.altimeterInHg) + " / "
-							+ MFormat.instance.numberFormatDecimal0.format(_airport.metar.altimeterHpa);
+					return MFormat.instance.numberFormatDecimal0.format(_airport.metar.seaLevelPressureHpa);
+			}
+		}));
+
+		columns.put(col++, new MColumn("Altimeter (inHg)", false, SwingConstants.RIGHT, new Comparator<MAirport>()
+		{
+			@Override
+			public int compare(MAirport o1, MAirport o2)
+			{
+				int c;
+				if (o1.metar == null)
+					c = -1;
+				else if (o2.metar == null)
+					c = 1;
+				else
+					c = Double.compare(o1.metar.altimeterInHg, o2.metar.altimeterInHg);
+				if (!sortedAsc)
+					c = -c;
+				return c;
+			}
+		}, new MColumnValue()
+		{
+			@Override
+			public Object get(MAirport _airport)
+			{
+				if (_airport.metar == null || _airport.metar.altimeterInHg < 0)
+					return null;
+				else
+					return MFormat.instance.numberFormatDecimal2.format(_airport.metar.altimeterInHg);
 			}
 		}));
 

@@ -16,6 +16,7 @@ public class MMetarDefinitions
 	public HashMap<String, String> runwayContaminationTypes;
 	public HashMap<String, String> runwayCoverages;
 	public HashMap<String, String> runwayBrakingActions;
+	public HashMap<String, String> cloudCoverageRemarks;
 
 	private MMetarDefinitions()
 	{
@@ -29,6 +30,7 @@ public class MMetarDefinitions
 		initRunwayContaminationTypes();
 		initRunwayCoverages();
 		initRunwayBrakingActions();
+		initCloudCoverageRemarks();
 	}
 
 	private void initCovers()
@@ -111,11 +113,14 @@ public class MMetarDefinitions
 	private void initSensors()
 	{
 		sensors = new HashMap<String, String>();
-		sensors.put("PWINO", "Precipitation sensor not operational");
-		sensors.put("RVRNO", "Runway Visual Range sensor not operational");
-		sensors.put("VISNO", "Visibility sensor not operational");
-		sensors.put("TSNO", "Thunderstorm sensor not operational");
+		sensors.put("CHINO", "Ceiling height indicator not operational");
 		sensors.put("FZRANO", "Thunderstorm sensor not operational");
+		sensors.put("PNO", "Precipitation sensor not operational");
+		sensors.put("PWINO", "Present weather sensor not operational");
+		sensors.put("RVRNO", "Runway Visual Range sensor not operational");
+		sensors.put("SLPNO", "Sea level pressure not operational");
+		sensors.put("TSNO", "Thunderstorm sensor not operational");
+		sensors.put("VISNO", "Visibility sensor not operational");
 	}
 
 	private void initDataMissing()
@@ -175,5 +180,21 @@ public class MMetarDefinitions
 		runwayBrakingActions.put("93", "Medium to Good");
 		runwayBrakingActions.put("94", "Good");
 		runwayBrakingActions.put("99", "Runway not operational");
+	}
+
+	private void initCloudCoverageRemarks()
+	{
+		cloudCoverageRemarks = new HashMap<String, String>();
+		cloudCoverageRemarks.put("AC", "Altocumulus");
+		cloudCoverageRemarks.put("AS", "Altostratus");
+		cloudCoverageRemarks.put("CI", "Cirrus");
+		cloudCoverageRemarks.put("CS", "Cirrostratus");
+		cloudCoverageRemarks.put("FG", "Fog");
+		cloudCoverageRemarks.put("HZ", "Haze");
+		cloudCoverageRemarks.put("NS", "Nimbostratus");
+		cloudCoverageRemarks.put("SC", "Stratocumulus");
+		cloudCoverageRemarks.put("SF", "Stratus fractus");
+		cloudCoverageRemarks.put("SN", "Snow");
+		cloudCoverageRemarks.put("ST", "Stratus");
 	}
 }
