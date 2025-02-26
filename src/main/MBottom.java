@@ -50,18 +50,16 @@ public class MBottom extends JPanel
 		GridBagConstraints c = new GridBagConstraints();
 		c.insets = new Insets(2, 2, 2, 2);
 
-		JPanel remarks = createRemarks();
 		c.gridx = 0;
 		c.gridy = 0;
 		c.anchor = GridBagConstraints.FIRST_LINE_START;
-		panel.add(remarks, c);
+		panel.add(createRemarks(), c);
 
-		JPanel airport = createAirport();
 		c.gridx = 1;
 		c.gridy = 0;
 		c.anchor = GridBagConstraints.FIRST_LINE_START;
 		c.weightx = 1.0;
-		panel.add(airport, c);
+		panel.add(createAirport(), c);
 
 		setLayout(new BorderLayout());
 		add(panel, BorderLayout.NORTH);
@@ -126,8 +124,8 @@ public class MBottom extends JPanel
 		JPanel panel = new JPanel(new BorderLayout());
 		Border border = BorderFactory.createTitledBorder("Remarks");
 		panel.setBorder(border);
-		panel.setMinimumSize(new Dimension(400, 100));
-		panel.setPreferredSize(new Dimension(400, 100));
+		panel.setMinimumSize(new Dimension(500, 100));
+		panel.setPreferredSize(new Dimension(500, 100));
 
 		model = new MBottomModel();
 		table = new MBottomTable(model);
@@ -144,8 +142,7 @@ public class MBottom extends JPanel
 		labelAirportValue.setText(_airport.name);
 		labelCountryValue.setText(countries.get(_airport.country).toString());
 		labelCityValue.setText(_airport.city);
-		if (_airport.metar != null)
-			model.remarks = _airport.metar == null ? null : _airport.metar.remarks;
+		model.remarks = _airport.metar == null ? null : _airport.metar.remarks;
 		model.fireTableDataChanged();
 		new MTableColumnAdjuster(table).adjustColumns();
 	}

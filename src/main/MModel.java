@@ -60,9 +60,9 @@ public class MModel extends AbstractTableModel
 			public int compare(MAirport o1, MAirport o2)
 			{
 				int c;
-				if (o1.metar == null)
+				if (o1.metar == null || o1.metar.observationTime == null)
 					c = -1;
-				else if (o2.metar == null)
+				else if (o2.metar == null || o2.metar.observationTime == null)
 					c = 1;
 				else
 					c = o1.metar.observationTime.compareTo(o2.metar.observationTime);
@@ -487,7 +487,7 @@ public class MModel extends AbstractTableModel
 			}
 		}));
 
-		columns.put(col++, new MColumn("Raw", false, SwingConstants.LEFT, null, new MColumnValue()
+		columns.put(col++, new MColumn("Raw METAR", false, SwingConstants.LEFT, null, new MColumnValue()
 		{
 			@Override
 			public Object get(MAirport _airport)

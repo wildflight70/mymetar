@@ -21,7 +21,6 @@ import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.JTableHeader;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
-import javax.swing.table.TableColumnModel;
 
 import org.tinylog.Logger;
 
@@ -50,8 +49,7 @@ public class MTable extends JTable
 
 		model = _model;
 
-		TableColumn column = columnModel.getColumn(model.sortedColumn);
-		column.setHeaderValue(_model.getColumnName(model.sortedColumn) + (model.sortedAsc ? " +" : " -"));
+		updateSortedColumnName(false);
 
 		getTableHeader().setReorderingAllowed(false);
 
@@ -76,7 +74,6 @@ public class MTable extends JTable
 		setDefaultRenderer(Object.class, new PaddingRenderer());
 
 		// Click on column header to sort this column
-		TableColumnModel columnModel = getColumnModel();
 		JTableHeader header = getTableHeader();
 		header.addMouseListener(new MouseAdapter()
 		{
@@ -86,8 +83,7 @@ public class MTable extends JTable
 				int col = columnModel.getColumnIndexAtX(e.getX());
 				if (col >= 0 && model.canSort(col))
 				{
-					TableColumn column = columnModel.getColumn(model.sortedColumn);
-					column.setHeaderValue(_model.getColumnName(model.sortedColumn));
+					updateSortedColumnName(true);
 
 					if (col == model.sortedColumn)
 						model.sortedAsc = !model.sortedAsc;
@@ -99,8 +95,7 @@ public class MTable extends JTable
 					_model.sort();
 					_model.fireTableDataChanged();
 
-					column = columnModel.getColumn(model.sortedColumn);
-					column.setHeaderValue(_model.getColumnName(model.sortedColumn) + (model.sortedAsc ? " +" : " -"));
+					updateSortedColumnName(false);
 					header.repaint();
 				}
 			}
@@ -133,6 +128,16 @@ public class MTable extends JTable
 		});
 
 		initMenu();
+	}
+
+	private void updateSortedColumnName(boolean _reset)
+	{
+		TableColumn column = columnModel.getColumn(model.sortedColumn);
+		column = columnModel.getColumn(model.sortedColumn);
+		String newName = model.getColumnName(model.sortedColumn);
+		if (!_reset)
+			newName += (model.sortedAsc ? " +" : " -");
+		column.setHeaderValue(newName);
 	}
 
 	private void initMenu()
@@ -205,7 +210,7 @@ public class MTable extends JTable
 		c.setForeground(airport.found ? FOUND_COLOR : Color.BLACK);
 
 		// Highlight not decoded metars
-		if (column.name.equals("Station id") || column.name.equals("Raw"))
+		if (column.name.equals("Station id") || column.name.equals("Raw METAR"))
 			if (airport.metar != null && airport.metar.notDecoded)
 				c.setBackground(MColor.blend(c.getBackground(), NOT_DECODED_COLOR));
 

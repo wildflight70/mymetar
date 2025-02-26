@@ -35,11 +35,15 @@ public class MMetar
 	private static final Pattern PATTERN_REMARK_PRESSURE_TENDENCY = Pattern.compile("(5\\d{4})");
 	private static final Pattern PATTERN_REMARK_SENSOR = Pattern.compile("\\b(PWINO|RVRNO|VISNO|TSNO|FZRANO)");
 	private static final Pattern PATTERN_REMARK_MISSING = Pattern
-			.compile("(WIND|CLD|WX|VIS|PCPN|PRES|DP|ICE|DENSITY\\sALT|T)\\sMISG");
+			.compile("\\b(WIND|CLD|WX|VIS|PCPN|PRES|DP|ICE|DENSITY\\sALT|T)\\sMISG");
 	private static final Pattern PATTERN_REMARK_SKY_COVERAGE = Pattern
 			.compile("((AC|AS|CI|CS|FG|HZ|NS|SC|SF|SN|ST)\\d){1,}");
 	private static final Pattern PATTERN_REMARK_ALTIMETER = Pattern.compile("(A)(\\d{4})");
 	private static final Pattern PATTERN_REMARK_WEATHER = Pattern.compile("\\b(CIG|ICE|RAG|SNW)(\\sMISG)?");
+	private static final Pattern PATTERN_REMARK_LAST_STATIONARY_FLIGHT_DIRECTION = Pattern
+			.compile("\\b((LST|LAST)\\s?(STFD)?)");
+	private static final Pattern PATTERN_REMARK_NEXT_OBSERVATION = Pattern
+			.compile("/?((OBS)?\\s?/\\s?(NEXT|NXT)?\\s?(OBS\\s)?(\\d\\d)?\\s?(\\d\\d)(\\d\\d)\\s?(UTC|Z)?)");
 
 	private static final Pattern PATTERN_NOT_DECODE = Pattern.compile("(?<=^<html>|</b>)(.*?)(?=<b>|</html>$)");
 
@@ -285,14 +289,25 @@ public class MMetar
 		return buffer.toString();
 	}
 
+	private String highLight(String _rawText, String _field)
+	{
+		String target = _field;
+		String replacement = "<b>" + _field + "</b>";
+		int index = _rawText.indexOf(target);
+		if (index >= 0)
+			return _rawText.substring(0, index) + replacement + _rawText.substring(index + target.length());
+		else
+			return _rawText;
+	}
+
 	private void highLightBeforeRMK(String _field)
 	{
-		rawTextBeforeRMKHighlight = rawTextBeforeRMKHighlight.replace(_field, "<b>" + _field + "</b>");
+		rawTextBeforeRMKHighlight = highLight(rawTextBeforeRMKHighlight, _field);
 	}
 
 	private void highLightAfterRMK(String _field)
 	{
-		rawTextAfterRMKHighlight = rawTextAfterRMKHighlight.replace(_field, "<b>" + _field + "</b>");
+		rawTextAfterRMKHighlight = highLight(rawTextAfterRMKHighlight, _field);
 	}
 
 	public void decode()
@@ -802,13 +817,36 @@ public class MMetar
 			{
 				String rawWeather = matcher.group(1);
 				String rawMissing = matcher.group(2);
-				if(rawMissing == null)
+				if (rawMissing == null)
 				{
 					remarks.add(new MRemark(rawWeather, rawWeather));
 					highLightAfterRMK(rawWeather);
 				}
 			}
-			
+
+			// Last stationary flight direction
+			matcher = PATTERN_REMARK_LAST_STATIONARY_FLIGHT_DIRECTION.matcher(rawTextAfterRMK);
+			while (matcher.find())
+			{
+				String rawMatch = matcher.group(1);
+
+				remarks.add(new MRemark(rawMatch, "Last stationary flight direction"));
+				highLightAfterRMK(rawMatch);
+			}
+
+			matcher = PATTERN_REMARK_NEXT_OBSERVATION.matcher(rawTextAfterRMK);
+			while (matcher.find())
+			{
+				String rawMatch = matcher.group(1);
+				String rawDay = matcher.group(5);
+				int day = rawDay == null ? observationTime.getDayOfMonth() : Integer.parseInt(rawDay);
+				String rawHour = matcher.group(6);
+				String rawMinute = matcher.group(7);
+
+				remarks.add(new MRemark(rawMatch, "Next observation at " + day + "th " + rawHour + ":" + rawMinute + "Z"));
+				highLightAfterRMK(rawMatch);
+			}
+
 			// Maintenance
 			if (rawTextAfterRMK.endsWith("$"))
 			{
