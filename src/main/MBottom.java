@@ -186,7 +186,6 @@ public class MBottom extends JPanel
 				return null;
 			}
 		}
-
 	}
 
 	private class MBottomTable extends JTable

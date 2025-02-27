@@ -36,7 +36,7 @@ public class MNOAAFTP
 	private String password;
 	private String remoteDir;
 
-	public boolean download()
+	public boolean download(TaskDownloadUpdate _update)
 	{
 		Logger.info("download begin");
 
@@ -69,7 +69,7 @@ public class MNOAAFTP
 			FTPFile[] files = ftpClient.listFiles();
 			for (FTPFile file : files)
 				if (file.isFile())
-					futures.add(executor.submit(new TaskDownload(file)));
+					futures.add(executor.submit(new TaskDownload(_update, file)));
 
 			ftpClient.logout();
 			ftpClient.disconnect();
@@ -99,12 +99,19 @@ public class MNOAAFTP
 		return ok;
 	}
 
+	public static interface TaskDownloadUpdate
+	{
+		public void run(String _file, boolean _status);
+	}
+
 	private class TaskDownload implements Callable<Void>
 	{
+		private TaskDownloadUpdate update;
 		private FTPFile file;
 
-		public TaskDownload(FTPFile _file)
+		public TaskDownload(TaskDownloadUpdate _update, FTPFile _file)
 		{
+			update = _update;
 			file = _file;
 		}
 
@@ -122,6 +129,9 @@ public class MNOAAFTP
 
 			ftpClient.logout();
 			ftpClient.disconnect();
+
+			if (update != null)
+				update.run(file.getName(), success);
 
 			Logger.info("Downloaded " + file + " : " + success);
 

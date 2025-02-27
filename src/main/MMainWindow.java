@@ -13,9 +13,6 @@ import javax.swing.JMenuItem;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 
-import data.MNOAAAPI;
-import data.MNOAAFTP;
-import data.MOurAirports;
 import util.MTableColumnAdjuster;
 
 @SuppressWarnings("serial")
@@ -56,7 +53,7 @@ public class MMainWindow extends JFrame
 		setLayout(new BorderLayout());
 		add(MTop.instance, BorderLayout.NORTH);
 		add(split, BorderLayout.CENTER);
-		
+
 		split.setDividerLocation(300);
 	}
 
@@ -95,18 +92,8 @@ public class MMainWindow extends JFrame
 
 	private void doDownload()
 	{
-		// NOAA FTP
-		MNOAAFTP noaaFTP = new MNOAAFTP();
-		noaaFTP.download();
-
-		// NOAA API
-		MNOAAAPI noaaAPI = new MNOAAAPI();
-		noaaAPI.downloadAll();
-
-		// OurAirports
-		MOurAirports ourAirports = new MOurAirports();
-		ourAirports.downloadAirports();
-		ourAirports.downloadCountries();
+		MDownload download = new MDownload();
+		download.setVisible(true);
 
 		// Update table
 		model.load();

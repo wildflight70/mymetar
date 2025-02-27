@@ -21,6 +21,8 @@ import java.util.concurrent.Future;
 
 import org.tinylog.Logger;
 
+import data.MNOAAFTP.TaskDownloadUpdate;
+
 public class MNOAAAPI
 {
 	private static final String LOCAL_DIR = "temp/";
@@ -63,11 +65,13 @@ public class MNOAAAPI
 		return metar;
 	}
 
-	public ArrayList<MMetar> download(int _latitudeFrom, int _latitudeTo, int _longitudeFrom, int _longitudeTo)
+	public ArrayList<MMetar> download(TaskDownloadUpdate _update, int _latitudeFrom, int _latitudeTo, int _longitudeFrom,
+			int _longitudeTo)
 	{
 		final String NOAA_METAR_CSV_URL = "https://aviationweather.gov/api/data/dataserver?requestType=retrieve&dataSource=metars&hoursBeforeNow=2&format=csv&mostRecentForEachStation=constraint&boundingBox="
 				+ _latitudeFrom + "%2C" + _longitudeFrom + "%2C" + _latitudeTo + "%2C" + _longitudeTo;
 
+		boolean ok = true;
 		ArrayList<MMetar> metars = new ArrayList<MMetar>();
 
 		try
@@ -98,12 +102,16 @@ public class MNOAAAPI
 		catch (Exception e)
 		{
 			Logger.error(e);
+			ok = false;
 		}
+
+		if (_update != null)
+			_update.run(NOAA_METAR_CSV_URL, ok);
 
 		return metars;
 	}
 
-	public boolean downloadAll()
+	public boolean downloadAll(TaskDownloadUpdate _update)
 	{
 		Logger.info("downloadAll begin");
 
@@ -120,8 +128,8 @@ public class MNOAAAPI
 		int deltaLongitude = 20;
 		for (int latitude = -90; latitude < 90; latitude += deltaLatitude)
 			for (int longitude = -180; longitude < 180; longitude += deltaLongitude)
-				futures.add(
-						executor.submit(new TaskLoad(latitude, latitude + deltaLatitude, longitude, longitude + deltaLongitude)));
+				futures.add(executor
+						.submit(new TaskLoad(_update, latitude, latitude + deltaLatitude, longitude, longitude + deltaLongitude)));
 
 		for (Future<ArrayList<MMetar>> future : futures)
 			try
@@ -146,13 +154,16 @@ public class MNOAAAPI
 
 	private class TaskLoad implements Callable<ArrayList<MMetar>>
 	{
+		private TaskDownloadUpdate update;
 		private int latitudeFrom;
 		private int latitudeTo;
 		private int longitudeFrom;
 		private int longitudeTo;
 
-		public TaskLoad(int _latitudeFrom, int _latitudeTo, int _longitudeFrom, int _longitudeTo)
+		public TaskLoad(TaskDownloadUpdate _update, int _latitudeFrom, int _latitudeTo, int _longitudeFrom,
+				int _longitudeTo)
 		{
+			update = _update;
 			latitudeFrom = _latitudeFrom;
 			latitudeTo = _latitudeTo;
 			longitudeFrom = _longitudeFrom;
@@ -161,7 +172,7 @@ public class MNOAAAPI
 
 		public ArrayList<MMetar> call() throws Exception
 		{
-			return download(latitudeFrom, latitudeTo, longitudeFrom, longitudeTo);
+			return download(update, latitudeFrom, latitudeTo, longitudeFrom, longitudeTo);
 		}
 	}
 
@@ -236,6 +247,6 @@ public class MNOAAAPI
 //		for (MMetar metar : metars)
 //			System.out.println(metar.rawText);
 
-		load.downloadAll();
+		load.downloadAll(null);
 	}
 }
