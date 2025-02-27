@@ -17,6 +17,11 @@ public class MUnit
 		return _meters * 3.28084;
 	}
 
+	public static double feetToMeters(double _feet)
+	{
+		return _feet / 3.28084;
+	}
+
 	public static double hPaToInHg(double _hPa)
 	{
 		return Math.round(100.0 * _hPa / 33.864) / 100.0;
