@@ -221,10 +221,12 @@ public class MMetarDefinitions
 		cloudRemarks.put("AC TR", "Altocumulus translucidus");
 		cloudRemarks.put("CB", "Cumulonimbus");
 		cloudRemarks.put("CI TR", "Cirrus translucidus");
+		cloudRemarks.put("OCNL BLSN", "Occasional blowing snow");
 		cloudRemarks.put("SC CL", "Stratocumulus castellanus");
 		cloudRemarks.put("SC OP", "Stratocumulus opacus");
 		cloudRemarks.put("SC TR", "Stratocumulus translucidus");
 		cloudRemarks.put("SF TR", "Stratus fractus translucidus");
+		cloudRemarks.put("ST TR", "Stratus translucidus");
 		cloudRemarks.put("TCU", "Towering cumulus");
 	}
 	

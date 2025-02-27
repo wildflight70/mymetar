@@ -47,10 +47,10 @@ public class MMetar
 	private static final Pattern PATTERN_REMARK_NEXT_OBSERVATION = Pattern
 			.compile("/?((OB(S)?)?\\s?/\\s?(NEXT|NXT)?\\s?/?(OBS\\s)?(\\d\\d)?\\s?(\\d\\d)(\\d\\d)\\s?(UTC|Z)?)");
 	private static final Pattern PATTERN_REMARK_CLOUDS = Pattern
-			.compile("\\b(CI\\sTR|SF\\sTR|SC\\sTR|SC\\sOP|SC\\sCL|AC\\sTR|AC\\sOP\\AC\\sCUGEN|CB|TCU)");
+			.compile("\\b(ST\\sTR|CI\\sTR|SF\\sTR|SC\\sTR|SC\\sOP|SC\\sCL|AC\\sTR|AC\\sOP\\AC\\sCUGEN|CB|TCU|OCNL\\sBLSN)");
 	private static final Pattern PATTERN_REMARK_DENSITY_ALTITUDE = Pattern.compile("\\b(DENSITY\\sALT\\s(-?\\d+)FT)");
 
-	private static final Pattern PATTERN_SLASH = Pattern.compile("(?<= )/+/+(?= )|/+/+(?=$)");
+	private static final Pattern PATTERN_SLASH = Pattern.compile("(?<= )/+/+(?= )|/+/+(?=$)|[AQ]/{4}");
 	private static final Pattern PATTERN_NOT_DECODE = Pattern.compile("(?<=^<html>|</b>)(.*?)(?=<b>|</html>$)");
 
 	public String rawText;
@@ -356,10 +356,9 @@ public class MMetar
 		// 2. Decode after RMK
 		decodeRemarks();
 
-		decodeSlash();
-
-		// 3. Update rawTextHighlight
+		// 3. Update rawTextHighlight and highlight groups of slashes
 		updateRawTextHighLight();
+		decodeSlash();
 
 		// 4. Check if metar is not totally decoded
 		notDecoded();
@@ -367,21 +366,16 @@ public class MMetar
 
 	private void decodeSlash()
 	{
-		Matcher matcher = PATTERN_SLASH.matcher(rawTextBeforeRMK);
+		StringBuffer buffer = new StringBuffer();
+		Matcher matcher = PATTERN_SLASH.matcher(rawTextHighlight);
 		while (matcher.find())
 		{
 			String rawMatch = matcher.group();
-			highLightBeforeRMK(rawMatch);
+
+			matcher.appendReplacement(buffer, "<b>" + rawMatch + "</b>");
 		}
-		if (rawTextAfterRMK != null)
-		{
-			matcher = PATTERN_SLASH.matcher(rawTextAfterRMK);
-			while (matcher.find())
-			{
-				String rawMatch = matcher.group();
-				highLightAfterRMK(rawMatch);
-			}
-		}
+		matcher.appendTail(buffer);
+		rawTextHighlight = buffer.toString();
 	}
 
 	private void decodeColor()
