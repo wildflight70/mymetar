@@ -147,7 +147,7 @@ public class MNOAAAPI
 				}
 				catch (Exception e)
 				{
-					Logger.error(e);
+					Logger.error(line + "\n" + e);
 				}
 			}
 

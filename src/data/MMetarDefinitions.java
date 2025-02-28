@@ -6,45 +6,47 @@ public class MMetarDefinitions
 {
 	public static MMetarDefinitions instance = new MMetarDefinitions();
 
-	public HashMap<String, String> colors;
 	public HashMap<String, String> covers;
 	public HashMap<String, String> weathers;
-	public HashMap<String, String> pressureTendencies;
-	public HashMap<String, String> automatedStationTypes;
-	public HashMap<String, String> sensorRemarks;
-	public HashMap<String, String> dataMissing;
-	public HashMap<String, String> runwayTrends;
-	public HashMap<String, String> runwayContaminationTypes;
 	public HashMap<String, String> runwayCoverages;
 	public HashMap<String, String> runwayBrakingActions;
+	public HashMap<String, String> runwayTrends;
+	public HashMap<String, String> runwayContaminationTypes;
+	
+	public HashMap<String, String> colorRemarks;
+	public HashMap<String, String> pressureTendencyRemarks;
+	public HashMap<String, String> automatedStationTypeRemarks;
+	public HashMap<String, String> sensorRemarks;
+	public HashMap<String, String> dataMissingRemarks;
 	public HashMap<String, String> cloudCoverageRemarks;
 	public HashMap<String, String> cloudRemarks;
 	public HashMap<String, String> weatherRemarks;
 
 	private MMetarDefinitions()
 	{
-		initColors();
 		initCovers();
 		initWeathers();
-		initPressureTendencies();
-		initAutomatedStationTypes();
-		initSensorRemarks();
-		initDataMissing();
-		initRunwayTrends();
-		initRunwayContaminationTypes();
 		initRunwayCoverages();
 		initRunwayBrakingActions();
+		initRunwayTrends();
+		initRunwayContaminationTypes();
+		
+		initColorRemarks();
+		initPressureTendencyRemarks();
+		initAutomatedStationTypeRemarks();
+		initSensorRemarks();
+		initDataMissingRemarks();
 		initCloudCoverageRemarks();
 		initCloudRemarks();
 		initWeatherRemarks();
 	}
 
-	private void initColors()
+	private void initColorRemarks()
 	{
-		colors = new HashMap<String, String>();
-		colors.put("BLU", "Blue, good conditions");
-		colors.put("BLU+", "Blue, optimal conditions");
-		colors.put("GRN", "Green, VFR conditions");
+		colorRemarks = new HashMap<String, String>();
+		colorRemarks.put("BLU", "Blue, good conditions");
+		colorRemarks.put("BLU+", "Blue, optimal conditions");
+		colorRemarks.put("GRN", "Green, VFR conditions");
 	}
 	
 	private void initCovers()
@@ -101,27 +103,28 @@ public class MMetarDefinitions
 		weathers.put("DS", "Dust storm");
 	}
 
-	private void initPressureTendencies()
+	private void initPressureTendencyRemarks()
 	{
-		pressureTendencies = new HashMap<String, String>();
-		pressureTendencies.put("0", "No change");
-		pressureTendencies.put("1", "Rising then falling");
-		pressureTendencies.put("2", "Rising then steady");
-		pressureTendencies.put("3", "Rising steadily");
-		pressureTendencies.put("4", "Rising rapidly");
-		pressureTendencies.put("5", "Falling then rising");
-		pressureTendencies.put("6", "Falling then steady");
-		pressureTendencies.put("7", "Falling steadily");
-		pressureTendencies.put("8", "Falling rapidly");
+		pressureTendencyRemarks = new HashMap<String, String>();
+		pressureTendencyRemarks.put("0", "No change");
+		pressureTendencyRemarks.put("1", "Rising then falling");
+		pressureTendencyRemarks.put("2", "Rising then steady");
+		pressureTendencyRemarks.put("3", "Rising steadily");
+		pressureTendencyRemarks.put("4", "Rising rapidly");
+		pressureTendencyRemarks.put("5", "Falling then rising");
+		pressureTendencyRemarks.put("6", "Falling then steady");
+		pressureTendencyRemarks.put("7", "Falling steadily");
+		pressureTendencyRemarks.put("8", "Falling rapidly");
 	}
 
-	private void initAutomatedStationTypes()
+	private void initAutomatedStationTypeRemarks()
 	{
-		automatedStationTypes = new HashMap<String, String>();
-		automatedStationTypes.put("A01", "Automated station without a precipitation sensor");
-		automatedStationTypes.put("AO1", "Automated station without a precipitation sensor");
-		automatedStationTypes.put("AO2", "Automated station with a precipitation sensor");
-		automatedStationTypes.put("AO2A", "Automated station with a precipitation sensor");
+		automatedStationTypeRemarks = new HashMap<String, String>();
+		automatedStationTypeRemarks.put("A01", "Automated station without a precipitation sensor");
+		automatedStationTypeRemarks.put("AO1", "Automated station without a precipitation sensor");
+		automatedStationTypeRemarks.put("A02", "Automated station with a precipitation sensor");
+		automatedStationTypeRemarks.put("AO2", "Automated station with a precipitation sensor");
+		automatedStationTypeRemarks.put("AO2A", "Automated station with a precipitation sensor");
 	}
 
 	private void initSensorRemarks()
@@ -138,19 +141,19 @@ public class MMetarDefinitions
 		sensorRemarks.put("VISNO", "Visibility sensor not operational");
 	}
 
-	private void initDataMissing()
+	private void initDataMissingRemarks()
 	{
-		dataMissing = new HashMap<String, String>();
-		dataMissing.put("WIND MISG", "Wind missing");
-		dataMissing.put("CLD MISG", "Clouds missing");
-		dataMissing.put("WX MISG", "Weather missing");
-		dataMissing.put("VIS MISG", "Visibility missing");
-		dataMissing.put("PCPN MISG", "Precipitation missing");
-		dataMissing.put("PRES MISG", "Pressure missing");
-		dataMissing.put("T MISG", "Temperature missing");
-		dataMissing.put("DP MISG", "Dew point missing");
-		dataMissing.put("ICE MISG", "Icing missing");
-		dataMissing.put("DENSITY ALT MISG", "Density altitude missing");
+		dataMissingRemarks = new HashMap<String, String>();
+		dataMissingRemarks.put("WIND MISG", "Wind missing");
+		dataMissingRemarks.put("CLD MISG", "Clouds missing");
+		dataMissingRemarks.put("WX MISG", "Weather missing");
+		dataMissingRemarks.put("VIS MISG", "Visibility missing");
+		dataMissingRemarks.put("PCPN MISG", "Precipitation missing");
+		dataMissingRemarks.put("PRES MISG", "Pressure missing");
+		dataMissingRemarks.put("T MISG", "Temperature missing");
+		dataMissingRemarks.put("DP MISG", "Dew point missing");
+		dataMissingRemarks.put("ICE MISG", "Icing missing");
+		dataMissingRemarks.put("DENSITY ALT MISG", "Density altitude missing");
 	}
 
 	private void initRunwayTrends()

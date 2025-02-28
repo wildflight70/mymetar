@@ -34,8 +34,8 @@ public class MMetar
 	private static final Pattern PATTERN_REMARK_AUTOMATED_STATION_TYPES = Pattern.compile("(A[O0][12]A?)");
 	private static final Pattern PATTERN_REMARK_SEA_LEVEL_PRESSURE = Pattern.compile("(SLP\\d{3})");
 	private static final Pattern PATTERN_REMARK_PRECISE_TEMPERATURE = Pattern.compile("(T\\d{8})");
-	private static final Pattern PATTERN_REMARK_PRESSURE_TENDENCY = Pattern.compile("\\b(PRESFR|5\\d{4})");
-	private static final Pattern PATTERN_REMARK_SENSOR = Pattern.compile("\\b(PNO|PWINO|RVRNO|VISNO|TSNO|FZRANO|FROIN)");
+	private static final Pattern PATTERN_REMARK_PRESSURE_TENDENCY = Pattern.compile("\\b(PRESFR|PRESRR|5\\d{4})");
+	private static final Pattern PATTERN_REMARK_SENSOR = Pattern.compile("\\b(CHINO|PNO|PWINO|RVRNO|VISNO|TSNO|FZRANO|FROIN)");
 	private static final Pattern PATTERN_REMARK_MISSING = Pattern
 			.compile("\\b(WIND|CLD|WX|VIS|PCPN|PRES|DP|ICE|DENSITY\\sALT|T)\\sMISG");
 	private static final Pattern PATTERN_REMARK_SKY_COVERAGE = Pattern
@@ -43,9 +43,13 @@ public class MMetar
 	private static final Pattern PATTERN_REMARK_ALTIMETER = Pattern.compile("(A)(\\d{4})");
 	private static final Pattern PATTERN_REMARK_WEATHER = Pattern.compile("\\b(CIG|ICE|RAG|SNW|HALO)(\\sMISG)?");
 	private static final Pattern PATTERN_REMARK_LAST_STATIONARY_FLIGHT_DIRECTION = Pattern
-			.compile("\\b((LST|LAST|LAAST)\\s?(STFD|STGFD)?)");
+			.compile("\\b((LST|LAST|LAAST)\\s?(STAFFED|STFD|STGFD)?)");
 	private static final Pattern PATTERN_REMARK_NEXT_OBSERVATION = Pattern
 			.compile("/?((OB(S)?)?\\s?/\\s?(NEXT|NXT)?\\s?/?(OBS\\s)?(\\d\\d)?\\s?(\\d\\d)(\\d\\d)\\s?(UTC|Z)?)");
+	private static final Pattern PATTERN_REMARK_NEXT_OBSERVATION_2 = Pattern
+			.compile("(OBS/NXT\\s(\\d+)@(\\d+)Z)");
+	private static final Pattern PATTERN_REMARK_NEXT_OBSERVATION_3 = Pattern
+			.compile("(OBS/;NXT\\s(\\d{2})(\\d{2})(\\d{2})Z)");
 	private static final Pattern PATTERN_REMARK_CLOUDS = Pattern
 			.compile("\\b(ST\\sTR|CI\\sTR|SF\\sTR|SC\\sTR|SC\\sOP|SC\\sCL|AC\\sTR|AC\\sOP\\AC\\sCUGEN|CB|TCU|OCNL\\sBLSN)");
 	private static final Pattern PATTERN_REMARK_DENSITY_ALTITUDE = Pattern.compile("\\b(DENSITY\\sALT\\s(-?\\d+)FT)");
@@ -384,7 +388,7 @@ public class MMetar
 		if (matcher.find())
 		{
 			String rawMatch = matcher.group(1);
-			color = MMetarDefinitions.instance.colors.get(rawMatch);
+			color = MMetarDefinitions.instance.colorRemarks.get(rawMatch);
 			highLightBeforeRMK(rawMatch);
 		}
 	}
@@ -760,7 +764,7 @@ public class MMetar
 			if (matcher.find())
 			{
 				String rawStationType = matcher.group(1);
-				String stationType = MMetarDefinitions.instance.automatedStationTypes.get(rawStationType);
+				String stationType = MMetarDefinitions.instance.automatedStationTypeRemarks.get(rawStationType);
 				if (stationType != null)
 				{
 					remarks.add(new MRemark(rawStationType, stationType));
@@ -806,6 +810,8 @@ public class MMetar
 				String rawPressureTendency = matcher.group(1);
 				if (rawPressureTendency.equals("PRESFR"))
 					remarks.add(new MRemark(rawPressureTendency, "Pressure falling rapidly"));
+				else if (rawPressureTendency.equals("PRESRR"))
+					remarks.add(new MRemark(rawPressureTendency, "Pressure rising rapidly"));
 				else
 				{
 					String trend = rawPressureTendency.substring(1, 2);
@@ -814,7 +820,7 @@ public class MMetar
 					if (pressureSign.equals("1"))
 						pressure = -pressure;
 					remarks.add(new MRemark(rawPressureTendency, "Pressure tendency="
-							+ MMetarDefinitions.instance.pressureTendencies.get(trend) + ", " + pressure + " hPa change"));
+							+ MMetarDefinitions.instance.pressureTendencyRemarks.get(trend) + ", " + pressure + " hPa change"));
 				}
 				highLightAfterRMK(rawPressureTendency);
 			}
@@ -837,7 +843,7 @@ public class MMetar
 			while (matcher.find())
 			{
 				String rawMissing = matcher.group(1) + " MISG";
-				String missing = MMetarDefinitions.instance.dataMissing.get(rawMissing);
+				String missing = MMetarDefinitions.instance.dataMissingRemarks.get(rawMissing);
 				if (missing != null)
 				{
 					remarks.add(new MRemark(rawMissing, missing));
@@ -891,7 +897,7 @@ public class MMetar
 
 			// Last stationary flight direction
 			matcher = PATTERN_REMARK_LAST_STATIONARY_FLIGHT_DIRECTION.matcher(rawTextAfterRMK);
-			while (matcher.find())
+			if (matcher.find())
 			{
 				String rawMatch = matcher.group(1);
 
@@ -901,7 +907,7 @@ public class MMetar
 
 			// Next observation
 			matcher = PATTERN_REMARK_NEXT_OBSERVATION.matcher(rawTextAfterRMK);
-			while (matcher.find())
+			if (matcher.find())
 			{
 				String rawMatch = matcher.group(1);
 				String rawDay = matcher.group(6);
@@ -911,6 +917,35 @@ public class MMetar
 
 				remarks.add(new MRemark(rawMatch, "Next observation at " + day + "th " + rawHour + ":" + rawMinute + "Z"));
 				highLightAfterRMK(rawMatch);
+			}
+			else
+			{
+				matcher = PATTERN_REMARK_NEXT_OBSERVATION_2.matcher(rawTextAfterRMK);
+				if (matcher.find())
+				{
+					String rawMatch = matcher.group(1);
+					String rawDay = matcher.group(2);
+					int day = Integer.parseInt(rawDay);
+					String rawHour = matcher.group(3);
+
+					remarks.add(new MRemark(rawMatch, "Next observation at " + day + "th " + rawHour + ":00Z"));
+					highLightAfterRMK(rawMatch);
+				}
+				else
+				{
+					matcher = PATTERN_REMARK_NEXT_OBSERVATION_3.matcher(rawTextAfterRMK);
+					if (matcher.find())
+					{
+						String rawMatch = matcher.group(1);
+						String rawDay = matcher.group(2);
+						int day = Integer.parseInt(rawDay);
+						String rawHour = matcher.group(3);
+						String rawMinute = matcher.group(4);
+
+						remarks.add(new MRemark(rawMatch, "Next observation at " + day + "th " + rawHour + ":" + rawMinute + "Z"));
+						highLightAfterRMK(rawMatch);
+					}
+				}
 			}
 
 			// Clouds
@@ -939,7 +974,7 @@ public class MMetar
 			if (matcher.find())
 			{
 				String rawMatch = matcher.group(1);
-				String color = MMetarDefinitions.instance.colors.get(rawMatch);
+				String color = MMetarDefinitions.instance.colorRemarks.get(rawMatch);
 				remarks.add(new MRemark(rawMatch, color));
 				highLightAfterRMK(rawMatch);
 			}
