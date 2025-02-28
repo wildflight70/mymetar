@@ -31,4 +31,9 @@ public class MUnit
 	{
 		return Math.round(_inHg * 33.864);
 	}
+
+	public static double mmHgToHPa(double _mmHg)
+	{
+		return Math.round(_mmHg * 1.333);
+	}
 }

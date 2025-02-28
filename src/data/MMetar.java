@@ -4,7 +4,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -28,37 +27,39 @@ public class MMetar
 			.compile("(R(\\d{2}[LCR]?)/([PM])?(\\d{4})(V([PM])?(\\d{4}))?(FT)?/?([UND])?)");
 	private static final Pattern PATTERN_RUNWAY_VISUAL_RANGE_MISSING = Pattern.compile("\\b(R(\\d{2}[LCR]?)//{2,})");
 	private static final Pattern PATTERN_RUNWAY_CONDITIONS = Pattern
-			.compile("\\b(R(\\d{2}[LCR]?)/(\\d)(\\d)(\\d{2})(\\d{2}))\\b");
-	private static final Pattern PATTERN_COLOR = Pattern.compile("\\b((BLU|GRN)\\+?)");
+			.compile("\\b(R(\\d{2}[LCR]?)/(\\d)(\\d)(\\d{2})(\\d{2}))");
+	private static final Pattern PATTERN_COLOR = Pattern.compile("\\b(BLU|GRN)\\+?");
 
 	private static final Pattern PATTERN_REMARK_AUTOMATED_STATION_TYPES = Pattern.compile("(A[O0][12]A?)");
 	private static final Pattern PATTERN_REMARK_SEA_LEVEL_PRESSURE = Pattern.compile("(SLP\\d{3})");
-	private static final Pattern PATTERN_REMARK_PRECISE_TEMPERATURE = Pattern.compile("(T\\d{8})");
+	private static final Pattern PATTERN_REMARK_PRECISE_TEMPERATURE = Pattern.compile("T\\d{8}");
 	private static final Pattern PATTERN_REMARK_PRESSURE_TENDENCY = Pattern.compile("\\b(PRESFR|PRESRR|5\\d{4})");
 	private static final Pattern PATTERN_REMARK_SENSOR = Pattern
-			.compile("\\b(CHINO|PNO|PWINO|RVRNO|VISNO|TSNO|FZRANO|FROIN)");
+			.compile("\\b(CHINO|PNO|PWINO|RVRNO|SLPNO|VISNO|TSNO|FZRANO|FROIN)");
 	private static final Pattern PATTERN_REMARK_MISSING = Pattern
 			.compile("\\b(WIND|CLD|WX|VIS|PCPN|PRES|DP|ICE|DENSITY\\sALT|T)\\sMISG");
 	private static final Pattern PATTERN_REMARK_SKY_COVERAGE = Pattern
-			.compile("((AC|AS|CC|CI|CS|CU|FG|HZ|NS|SC|SF|SN|ST)\\d){1,}");
+			.compile("\\b((AC|AS|CC|CF|CI|CS|CU|FG|HZ|IC|NS|SC|SF|SN|ST)\\d){1,}");
 	private static final Pattern PATTERN_REMARK_ALTIMETER = Pattern.compile("(A)(\\d{4})");
 	private static final Pattern PATTERN_REMARK_WEATHER = Pattern.compile("\\b(CIG|ICE|RAG|SNW|HALO)(\\sMISG)?");
 	private static final Pattern PATTERN_REMARK_LAST_STATIONARY_FLIGHT_DIRECTION = Pattern
 			.compile("\\b((LST|LAST|LAAST)\\s?(STAFFED|STFD|STGFD)?)");
 
-	private static String REMARK_NEXT_OBSERVATION = "(OBS(/|\\s)(NEXT|NXT)(/|\\s|\\sOBS)?(?<day1>\\d{2})?\\s?(?<hour1>\\d{2})(?<minute1>\\d{2})\\s?Z)";
-	private static String REMARK_NEXT_OBSERVATION_2 = "(OBS/NXT\\s(?<day2>\\d{2})@(?<hour2>\\d{2})(?<minute2>)Z)";
-	private static String REMARK_NEXT_OBSERVATION_3 = "(OBS/(?<day3>\\d{2})(?<hour3>\\d{2})(?<minute3>\\d{2})Z)";
-	private static String REMARK_NEXT_OBSERVATION_4 = "(OBS\\s?/?\\s?(NEXT|NXT)(/|\\s)(?<day4>\\d{2})(?<hour4>\\d{2})(?<minute4>\\d{2})\\s?UTC)";
-	private static String REMARK_NEXT_OBSERVATION_5 = "(OBS/NEXT\\s(?<day5>\\d{2})(?<hour5>\\d{2})(?<minute5>\\d{2}))";
+	private static final String REMARK_NEXT_OBSERVATION_1 = "(OBS(/|\\s);?(NEXT|NXT)(/|\\s|\\sOBS)?\\s?(?<day1>\\d{2})?\\s?(?<hour1>\\d{2})(?<minute1>\\d{2})\\s?Z)";
+	private static final String REMARK_NEXT_OBSERVATION_2 = "(OBS/NXT\\s(?<day2>\\d{2})@(?<hour2>\\d{2})(?<minute2>)Z)";
+	private static final String REMARK_NEXT_OBSERVATION_3 = "(OBS/(?<day3>\\d{2})(?<hour3>\\d{2})(?<minute3>\\d{2})Z)";
+	private static final String REMARK_NEXT_OBSERVATION_4 = "(OBS\\s?/?\\s?(NEXT|NXT)(/|\\s)(?<day4>\\d{2})(?<hour4>\\d{2})(?<minute4>\\d{2})\\s?UTC)";
+	private static final String REMARK_NEXT_OBSERVATION_5 = "(OBS/\\s?(NEXT|NXT)\\s(?<day5>\\d{2})(?<hour5>\\d{2})(?<minute5>\\d{2}))";
 
 	private static final Pattern PATTERN_REMARK_NEXT_OBSERVATION = Pattern
-			.compile("(" + REMARK_NEXT_OBSERVATION + "|" + REMARK_NEXT_OBSERVATION_2 + "|" + REMARK_NEXT_OBSERVATION_3 + "|"
+			.compile("(" + REMARK_NEXT_OBSERVATION_1 + "|" + REMARK_NEXT_OBSERVATION_2 + "|" + REMARK_NEXT_OBSERVATION_3 + "|"
 					+ REMARK_NEXT_OBSERVATION_4 + "|" + REMARK_NEXT_OBSERVATION_5 + ")");
 
-	private static final Pattern PATTERN_REMARK_CLOUDS = Pattern
-			.compile("\\b(ST\\sTR|CI\\sTR|SF\\sTR|SC\\sTR|SC\\sOP|SC\\sCL|AC\\sTR|AC\\sOP\\AC\\sCUGEN|CB|TCU|OCNL\\sBLSN)");
-	private static final Pattern PATTERN_REMARK_DENSITY_ALTITUDE = Pattern.compile("\\b(DENSITY\\sALT\\s(-?\\d+)FT)");
+	private static final Pattern PATTERN_REMARK_CLOUDS = Pattern.compile(
+			"\\b(CF\\sTR|SOG\\sTR|ST\\sTR|CI\\sTR|SF\\sTR|SC\\sTR|SC\\sOP|SC\\sCL|AC\\sTR|AS\\sTR|AC\\sOP\\AC\\sCUGEN|CB|TCU|OCNL\\sBLSN)");
+	private static final Pattern PATTERN_REMARK_DENSITY_ALTITUDE = Pattern.compile("\\bDENSITY\\sALT\\s(-?\\d+)FT");
+
+	private static final Pattern PATTERN_REMARK_AIRFIELD_ELEVATION = Pattern.compile("\\bQFE(\\d+)(/(\\d+))?");
 
 	private static final Pattern PATTERN_SLASH = Pattern.compile("(?<= )/+/+(?= )|/+/+(?=$)|[AQ]/{4}");
 	private static final Pattern PATTERN_NOT_DECODE = Pattern.compile("(?<=^<html>|</b>)(.*?)(?=<b>|</html>$)");
@@ -393,7 +394,7 @@ public class MMetar
 		Matcher matcher = PATTERN_COLOR.matcher(rawTextBeforeRMK);
 		if (matcher.find())
 		{
-			String rawMatch = matcher.group(1);
+			String rawMatch = matcher.group(0);
 			color = MMetarDefinitions.instance.colorRemarks.get(rawMatch);
 			highLightBeforeRMK(rawMatch);
 		}
@@ -506,11 +507,12 @@ public class MMetar
 		Matcher matcher = PATTERN_VISIBILITY.matcher(rawTextBeforeRMK);
 		if (matcher.find())
 		{
+			String rawMatch = matcher.group(0);
 			String rawVisibilitySM = matcher.group(1);
 			if (rawVisibilitySM != null)
 			{
 				visibilitySM = Math.round(10.0 * parseFractionalMiles(rawVisibilitySM)) / 10.0;
-				highLightBeforeRMK(rawVisibilitySM + "SM");
+				highLightBeforeRMK(rawMatch);
 			}
 			else
 			{
@@ -521,7 +523,7 @@ public class MMetar
 					visibilitySM = Integer.parseInt(rawVisibility);
 					visibilitySM = Math.round(10.0 * MUnit.metersToSM(visibilitySM)) / 10.0;
 					visibilityNonDirectionalVaration = rawVisibilityIndicator != null && rawVisibilityIndicator.equals("NDV");
-					highLightBeforeRMK(rawVisibility + (rawVisibilityIndicator == null ? "" : rawVisibilityIndicator));
+					highLightBeforeRMK(rawMatch);
 				}
 			}
 		}
@@ -529,6 +531,7 @@ public class MMetar
 		matcher = PATTERN_VISIBILITY_EXTRA.matcher(rawTextBeforeRMK);
 		if (matcher.find())
 		{
+			String rawMatch = matcher.group(0);
 			String rawVisibility = matcher.group(1);
 			String rawVisibilityIndicator = matcher.group(2);
 			if (rawVisibility != null)
@@ -537,7 +540,7 @@ public class MMetar
 				visibilitySMExtra = Math.round(10.0 * MUnit.metersToSM(visibilitySMExtra)) / 10.0;
 				if (rawVisibilityIndicator != null && rawVisibilityIndicator.equals("S"))
 					visibilityDirectionExtra = rawVisibilityIndicator;
-				highLightBeforeRMK(rawVisibility + (rawVisibilityIndicator == null ? "" : rawVisibilityIndicator));
+				highLightBeforeRMK(rawMatch);
 			}
 		}
 	}
@@ -799,19 +802,19 @@ public class MMetar
 		Matcher matcher = PATTERN_REMARK_PRECISE_TEMPERATURE.matcher(rawTextAfterRMK);
 		if (matcher.find())
 		{
-			String rawPreciseTemperature = matcher.group(1);
-			String temperatureSign = rawPreciseTemperature.substring(1, 2);
-			double temperature = Integer.parseInt(rawPreciseTemperature.substring(2, 5)) / 10.0;
+			String rawMatch = matcher.group(0);
+			String temperatureSign = rawMatch.substring(1, 2);
+			double temperature = Integer.parseInt(rawMatch.substring(2, 5)) / 10.0;
 			if (temperatureSign.equals("1"))
 				temperature = -temperature;
-			String dewPointSign = rawPreciseTemperature.substring(5, 6);
-			double dewPoint = Integer.parseInt(rawPreciseTemperature.substring(6)) / 10.0;
+			String dewPointSign = rawMatch.substring(5, 6);
+			double dewPoint = Integer.parseInt(rawMatch.substring(6)) / 10.0;
 			if (dewPointSign.equals("1"))
 				dewPoint = -dewPoint;
-			remarks.add(new MRemark(rawPreciseTemperature,
-					"Precise temperature=" + MFormat.instance.numberFormatDecimal1.format(temperature) + "°C" + ", dew point="
-							+ MFormat.instance.numberFormatDecimal1.format(dewPoint) + "°C"));
-			highLightAfterRMK(rawPreciseTemperature);
+			remarks
+					.add(new MRemark(rawMatch, "Precise temperature=" + MFormat.instance.numberFormatDecimal1.format(temperature)
+							+ "°C" + ", dew point=" + MFormat.instance.numberFormatDecimal1.format(dewPoint) + "°C"));
+			highLightAfterRMK(rawMatch);
 		}
 	}
 
@@ -878,7 +881,7 @@ public class MMetar
 			StringBuffer buffer = new StringBuffer();
 			for (int i = 0; i < rawMatch.length(); i += 3)
 			{
-				String cloudType = MMetarDefinitions.instance.cloudCoverageRemarks.get(rawMatch.substring(i, i + 2));
+				String cloudType = MMetarDefinitions.instance.skyCoverageRemarks.get(rawMatch.substring(i, i + 2));
 				int cover = Integer.parseInt(rawMatch.substring(i + 2, i + 3));
 				buffer.append(cloudType + "=" + cover + "/8");
 				if (i < rawMatch.length() - 3)
@@ -976,8 +979,8 @@ public class MMetar
 		Matcher matcher = PATTERN_REMARK_DENSITY_ALTITUDE.matcher(rawTextAfterRMK);
 		if (matcher.find())
 		{
-			String rawMatch = matcher.group(1);
-			String rawAltitude = matcher.group(2);
+			String rawMatch = matcher.group(0);
+			String rawAltitude = matcher.group(1);
 			int altitude = Integer.parseInt(rawAltitude);
 			remarks.add(new MRemark(rawMatch, "Density altitude=" + altitude + " ft"));
 			highLightAfterRMK(rawMatch);
@@ -989,9 +992,24 @@ public class MMetar
 		Matcher matcher = PATTERN_COLOR.matcher(rawTextAfterRMK);
 		if (matcher.find())
 		{
-			String rawMatch = matcher.group(1);
+			String rawMatch = matcher.group(0);
 			String color = MMetarDefinitions.instance.colorRemarks.get(rawMatch);
 			remarks.add(new MRemark(rawMatch, color));
+			highLightAfterRMK(rawMatch);
+		}
+	}
+
+	private void decodeRemarksAirfieldElevation()
+	{
+		Matcher matcher = PATTERN_REMARK_AIRFIELD_ELEVATION.matcher(rawTextAfterRMK);
+		if (matcher.find())
+		{
+			String rawMatch = matcher.group(0);
+			String rawFirstElevation = matcher.group(1);
+
+			int firstElevation = Integer.parseInt(rawFirstElevation);
+			remarks.add(new MRemark(rawMatch, "Airfield elevation=" + firstElevation + " mmHg + ("
+					+ MFormat.instance.numberFormatDecimal0.format(MUnit.mmHgToHPa(firstElevation)) + " hPa)"));
 			highLightAfterRMK(rawMatch);
 		}
 	}
@@ -1023,6 +1041,7 @@ public class MMetar
 			decodeRemarksClouds();
 			decodeRemarksDensityAltitude();
 			decodeRemarksColor();
+			decodeRemarksAirfieldElevation();
 			decodeRemarksMaintenance();
 		}
 	}
@@ -1043,28 +1062,5 @@ public class MMetar
 
 	public static void main(String[] args)
 	{
-		String metar = "ETHA 220920Z AUTO 23005KT 9999 // ////// 08/02 Q1019 ///";
-
-		// Regex to match groups of slashes with at least two slashes, surrounded by
-		// spaces
-		String regex = "(?<= )/+/+(?= )|/+/+(?=$)";
-
-		// Create a Pattern object
-		Pattern pattern = Pattern.compile(regex);
-
-		// Create a Matcher object
-		Matcher matcher = pattern.matcher(metar);
-
-		// List to store the matched groups
-		List<String> matches = new ArrayList<>();
-
-		// Find all matches and add to the list
-		while (matcher.find())
-		{
-			matches.add(matcher.group());
-		}
-
-		// Output the matches
-		System.out.println(matches);
 	}
 }
