@@ -27,7 +27,6 @@ Downloading data generates a <code>temp</code> folder containing:
 - <code>ourairports_countries.csv</code>: Countries
 
 Improvements:
-- Complete the decoding of METARs
-- Display progress during data download
+- Complete the decoding of METARs (~85% are completed)
 - Better warn the user in case of errors
 - Read airports from Microsoft Flight Simulator 2020 & 2024
