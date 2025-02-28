@@ -204,6 +204,7 @@ public class MMetarDefinitions
 		cloudCoverageRemarks.put("AS", "Altostratus");
 		cloudCoverageRemarks.put("CI", "Cirrus");
 		cloudCoverageRemarks.put("CS", "Cirrostratus");
+		cloudCoverageRemarks.put("CU", "Cumulus");
 		cloudCoverageRemarks.put("FG", "Fog");
 		cloudCoverageRemarks.put("HZ", "Haze");
 		cloudCoverageRemarks.put("NS", "Nimbostratus");

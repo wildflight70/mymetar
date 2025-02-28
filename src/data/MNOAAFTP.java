@@ -131,7 +131,7 @@ public class MNOAAFTP
 			ftpClient.disconnect();
 
 			if (update != null)
-				update.run(file.getName(), success);
+				update.run(server + "/" + file.getName(), success);
 
 			Logger.info("Downloaded " + file + " : " + success);
 

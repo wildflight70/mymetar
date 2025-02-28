@@ -108,19 +108,13 @@ public class MDownload extends JDialog
 
 				// NOAA API
 				MNOAAAPI noaaAPI = new MNOAAAPI();
-				noaaAPI.downloadAll(new TaskDownloadUpdate()
-				{
-					@Override
-					public void run(String _file, boolean _status)
-					{
-						publish(new MDownloadItem(_file, _status));
-					}
-				});
+				boolean status = noaaAPI.download();
+				publish(new MDownloadItem(MNOAAAPI.NOAA_METAR_CSV_URL, status));
 
 				// OurAirports
 				MOurAirports ourAirports = new MOurAirports();
 
-				boolean status = ourAirports.downloadAirports();
+				status = ourAirports.downloadAirports();
 				publish(new MDownloadItem(MOurAirports.AIRPORTS_URL, status));
 
 				status = ourAirports.downloadCountries();

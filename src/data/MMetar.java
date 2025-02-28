@@ -39,11 +39,11 @@ public class MMetar
 	private static final Pattern PATTERN_REMARK_MISSING = Pattern
 			.compile("\\b(WIND|CLD|WX|VIS|PCPN|PRES|DP|ICE|DENSITY\\sALT|T)\\sMISG");
 	private static final Pattern PATTERN_REMARK_SKY_COVERAGE = Pattern
-			.compile("((AC|AS|CI|CS|FG|HZ|NS|SC|SF|SN|ST)\\d){1,}");
+			.compile("((AC|AS|CI|CS|CU|FG|HZ|NS|SC|SF|SN|ST)\\d){1,}");
 	private static final Pattern PATTERN_REMARK_ALTIMETER = Pattern.compile("(A)(\\d{4})");
 	private static final Pattern PATTERN_REMARK_WEATHER = Pattern.compile("\\b(CIG|ICE|RAG|SNW|HALO)(\\sMISG)?");
 	private static final Pattern PATTERN_REMARK_LAST_STATIONARY_FLIGHT_DIRECTION = Pattern
-			.compile("\\b((LST|LAST|LAAST)\\s?(STFD)?)");
+			.compile("\\b((LST|LAST|LAAST)\\s?(STFD|STGFD)?)");
 	private static final Pattern PATTERN_REMARK_NEXT_OBSERVATION = Pattern
 			.compile("/?((OB(S)?)?\\s?/\\s?(NEXT|NXT)?\\s?/?(OBS\\s)?(\\d\\d)?\\s?(\\d\\d)(\\d\\d)\\s?(UTC|Z)?)");
 	private static final Pattern PATTERN_REMARK_CLOUDS = Pattern
