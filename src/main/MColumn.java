@@ -3,10 +3,14 @@ package main;
 import java.util.Comparator;
 
 import data.MAirport;
-import main.MModel.MColumnValue;
 
 public class MColumn
 {
+	public interface MColumnValue
+	{
+		public Object get(MAirport _airport);
+	}
+
 	public String name;
 	public boolean extra;
 	public int alignment; // SwingConstants.LEFT, SwingConstants.RIGHT, SwingConstants.CENTER;

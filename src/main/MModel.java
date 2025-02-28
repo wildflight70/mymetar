@@ -20,6 +20,7 @@ import data.MNOAAFTP;
 import data.MOurAirports;
 import data.MXPlane;
 import data.MXPlaneAirport;
+import main.MColumn.MColumnValue;
 import util.MFormat;
 
 @SuppressWarnings("serial")
@@ -28,16 +29,12 @@ public class MModel extends AbstractTableModel
 	private ArrayList<MAirport> airports;
 	public List<MAirport> visibleAirports;
 
-	interface MColumnValue
-	{
-		public Object get(MAirport _airport);
-	}
-
 	public HashMap<Integer, MColumn> columns;
 
 	public int sortedColumn;
 	public boolean sortedAsc;
 	public boolean filterShowOnlyAirportsWithMetar;
+	public boolean filterNotDecodedMetars;
 	public MCountry filterCountry;
 
 	private int totalMetars;
@@ -63,9 +60,9 @@ public class MModel extends AbstractTableModel
 			public int compare(MAirport o1, MAirport o2)
 			{
 				int c;
-				if (o1.metar == null)
+				if (o1.metar == null || o1.metar.observationTime == null)
 					c = -1;
-				else if (o2.metar == null)
+				else if (o2.metar == null || o2.metar.observationTime == null)
 					c = 1;
 				else
 					c = o1.metar.observationTime.compareTo(o2.metar.observationTime);
@@ -204,7 +201,7 @@ public class MModel extends AbstractTableModel
 			}
 		}));
 
-		columns.put(col++, new MColumn("Altimeter (inHg/hPa)", false, SwingConstants.RIGHT, new Comparator<MAirport>()
+		columns.put(col++, new MColumn("Sea level pressure (hPa)", false, SwingConstants.RIGHT, new Comparator<MAirport>()
 		{
 			@Override
 			public int compare(MAirport o1, MAirport o2)
@@ -215,7 +212,7 @@ public class MModel extends AbstractTableModel
 				else if (o2.metar == null)
 					c = 1;
 				else
-					c = Double.compare(o1.metar.altimeterHpa, o2.metar.altimeterHpa);
+					c = Double.compare(o1.metar.seaLevelPressureHpa, o2.metar.seaLevelPressureHpa);
 				if (!sortedAsc)
 					c = -c;
 				return c;
@@ -225,11 +222,38 @@ public class MModel extends AbstractTableModel
 			@Override
 			public Object get(MAirport _airport)
 			{
-				if (_airport.metar == null || _airport.metar.altimeterInHg == 0)
+				if (_airport.metar == null || _airport.metar.seaLevelPressureHpa < 0)
 					return null;
 				else
-					return MFormat.instance.numberFormatDecimal2.format(_airport.metar.altimeterInHg) + " / "
-							+ MFormat.instance.numberFormatDecimal0.format(_airport.metar.altimeterHpa);
+					return MFormat.instance.numberFormatDecimal0.format(_airport.metar.seaLevelPressureHpa);
+			}
+		}));
+
+		columns.put(col++, new MColumn("Altimeter (inHg)", false, SwingConstants.RIGHT, new Comparator<MAirport>()
+		{
+			@Override
+			public int compare(MAirport o1, MAirport o2)
+			{
+				int c;
+				if (o1.metar == null)
+					c = -1;
+				else if (o2.metar == null)
+					c = 1;
+				else
+					c = Double.compare(o1.metar.altimeterInHg, o2.metar.altimeterInHg);
+				if (!sortedAsc)
+					c = -c;
+				return c;
+			}
+		}, new MColumnValue()
+		{
+			@Override
+			public Object get(MAirport _airport)
+			{
+				if (_airport.metar == null || _airport.metar.altimeterInHg < 0)
+					return null;
+				else
+					return MFormat.instance.numberFormatDecimal2.format(_airport.metar.altimeterInHg);
 			}
 		}));
 
@@ -358,7 +382,7 @@ public class MModel extends AbstractTableModel
 			@Override
 			public Object get(MAirport _airport)
 			{
-				return _airport.metar == null ? null : _airport.metar.windSpeedKt;
+				return (_airport.metar == null || _airport.metar.windSpeedKt < 0) ? null : _airport.metar.windSpeedKt;
 			}
 		}));
 
@@ -405,7 +429,7 @@ public class MModel extends AbstractTableModel
 			@Override
 			public Object get(MAirport _airport)
 			{
-				return _airport.metar == null ? null : _airport.metar.cloudToString();
+				return _airport.metar == null ? null : _airport.metar.cloudsToString();
 			}
 		}));
 
@@ -418,12 +442,39 @@ public class MModel extends AbstractTableModel
 			}
 		}));
 
+		columns.put(col++, new MColumn("Runway visual ranges", false, SwingConstants.LEFT, null, new MColumnValue()
+		{
+			@Override
+			public Object get(MAirport _airport)
+			{
+				return _airport.metar == null ? null : _airport.metar.runwayVisualRangesToString();
+			}
+		}));
+
+		columns.put(col++, new MColumn("Runway conditions", false, SwingConstants.LEFT, null, new MColumnValue()
+		{
+			@Override
+			public Object get(MAirport _airport)
+			{
+				return _airport.metar == null ? null : _airport.metar.runwayConditionsToString();
+			}
+		}));
+
+		columns.put(col++, new MColumn("Color", false, SwingConstants.CENTER, null, new MColumnValue()
+		{
+			@Override
+			public Object get(MAirport _airport)
+			{
+				return _airport.metar == null ? null : _airport.metar.color;
+			}
+		}));
+		
 		columns.put(col++, new MColumn("Auto", false, SwingConstants.CENTER, null, new MColumnValue()
 		{
 			@Override
 			public Object get(MAirport _airport)
 			{
-				return _airport.metar == null || !_airport.metar.auto ? null : true;
+				return _airport.metar == null || !_airport.metar.auto ? null : "o";
 			}
 		}));
 
@@ -432,7 +483,7 @@ public class MModel extends AbstractTableModel
 			@Override
 			public Object get(MAirport _airport)
 			{
-				return _airport.metar == null || !_airport.metar.noSignal ? null : true;
+				return _airport.metar == null || !_airport.metar.noSignal ? null : "o";
 			}
 		}));
 
@@ -441,11 +492,11 @@ public class MModel extends AbstractTableModel
 			@Override
 			public Object get(MAirport _airport)
 			{
-				return _airport.metar == null || !_airport.metar.correction ? null : true;
+				return _airport.metar == null || !_airport.metar.correction ? null : "o";
 			}
 		}));
 
-		columns.put(col++, new MColumn("Raw", false, SwingConstants.LEFT, null, new MColumnValue()
+		columns.put(col++, new MColumn("Raw METAR", false, SwingConstants.LEFT, null, new MColumnValue()
 		{
 			@Override
 			public Object get(MAirport _airport)
@@ -496,7 +547,7 @@ public class MModel extends AbstractTableModel
 
 	public void load()
 	{
-		Logger.debug("load begin");
+		Logger.info("load begin");
 
 		airports = new MOurAirports().loadAirports();
 		HashMap<String, MXPlaneAirport> xPlaneMap = new MXPlane().load();
@@ -530,7 +581,7 @@ public class MModel extends AbstractTableModel
 		sortedAsc = true;
 		sort();
 
-		Logger.debug("load end");
+		Logger.info("load end");
 	}
 
 	public boolean canSort(int _col)
@@ -548,6 +599,7 @@ public class MModel extends AbstractTableModel
 		visibleAirports.clear();
 
 		visibleAirports = airports.stream().filter(airport -> !filterShowOnlyAirportsWithMetar || airport.metar != null)
+				.filter(airport -> !filterNotDecodedMetars || (airport.metar != null && airport.metar.notDecoded))
 				.filter(airport -> filterCountry == null || airport.country.equals(filterCountry.code))
 				.collect(Collectors.toList());
 	}

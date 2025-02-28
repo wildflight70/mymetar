@@ -31,7 +31,7 @@ public class MTop extends JPanel
 	private JLabel labelVisibleAirportsValue;
 	private JLabel labelFoundAirportsValue;
 	private JLabel labelTotalMetarsValue;
-	private JLabel labelTotalMetarNotDecodedValue;
+	private JLabel labelMetarNotDecodedValue;
 
 	private Font boldFont;
 
@@ -56,27 +56,27 @@ public class MTop extends JPanel
 		// Filter
 		c.gridx = 0;
 		c.gridy = 0;
-		c.anchor = GridBagConstraints.LINE_START;
+		c.anchor = GridBagConstraints.FIRST_LINE_START;
 		add(createFilter(), c);
 
 		// Search
 		c.gridx = 1;
 		c.gridy = 0;
-		c.anchor = GridBagConstraints.LINE_START;
+		c.anchor = GridBagConstraints.FIRST_LINE_START;
 		add(createSearch(), c);
 
 		// Count
 		c.gridx = 2;
 		c.gridy = 0;
-		c.anchor = GridBagConstraints.LINE_START;
+		c.anchor = GridBagConstraints.FIRST_LINE_START;
 		add(createCount(), c);
 	}
 
 	private JPanel createFilter()
 	{
 		JPanel panel = new JPanel(new GridBagLayout());
-		Border boder = BorderFactory.createTitledBorder("Filter");
-		panel.setBorder(boder);
+		Border border = BorderFactory.createTitledBorder("Filter");
+		panel.setBorder(border);
 
 		GridBagConstraints c = new GridBagConstraints();
 		c.insets = new Insets(2, 2, 2, 2);
@@ -94,10 +94,23 @@ public class MTop extends JPanel
 		c.anchor = GridBagConstraints.LINE_START;
 		panel.add(checkAirportsWithMetar, c);
 
+		// Not decoded METARs
+		JLabel labelNotDecodedMetars = new JLabel("Not decoded METARs");
+		c.gridx = 0;
+		c.gridy = 1;
+		c.anchor = GridBagConstraints.LINE_END;
+		panel.add(labelNotDecodedMetars, c);
+
+		JCheckBox checkNotDecodedMetars = new JCheckBox();
+		c.gridx = 1;
+		c.gridy = 1;
+		c.anchor = GridBagConstraints.LINE_START;
+		panel.add(checkNotDecodedMetars, c);
+
 		// Country
 		JLabel labelCountry = new JLabel("Country");
 		c.gridx = 0;
-		c.gridy = 1;
+		c.gridy = 2;
 		c.anchor = GridBagConstraints.LINE_END;
 		panel.add(labelCountry, c);
 
@@ -114,29 +127,24 @@ public class MTop extends JPanel
 		});
 		JComboBox<MCountry> comboCountry = new JComboBox<MCountry>(countries);
 		c.gridx = 1;
-		c.gridy = 1;
+		c.gridy = 2;
 		c.anchor = GridBagConstraints.LINE_END;
 		panel.add(comboCountry, c);
 
-		comboCountry.addActionListener(new ActionListener()
+		// Listeners
+		ActionListener actionListener = new ActionListener()
 		{
 			@Override
 			public void actionPerformed(ActionEvent e)
 			{
-				table.updateVisible(checkAirportsWithMetar.isSelected(), (MCountry) comboCountry.getSelectedItem());
+				table.updateVisible(checkAirportsWithMetar.isSelected(), checkNotDecodedMetars.isSelected(),
+						(MCountry) comboCountry.getSelectedItem());
 				table.updateTop();
 			}
-		});
-
-		checkAirportsWithMetar.addActionListener(new ActionListener()
-		{
-			@Override
-			public void actionPerformed(ActionEvent e)
-			{
-				table.updateVisible(checkAirportsWithMetar.isSelected(), (MCountry) comboCountry.getSelectedItem());
-				table.updateTop();
-			}
-		});
+		};
+		comboCountry.addActionListener(actionListener);
+		checkAirportsWithMetar.addActionListener(actionListener);
+		checkNotDecodedMetars.addActionListener(actionListener);
 
 		return panel;
 	}
@@ -144,8 +152,8 @@ public class MTop extends JPanel
 	private JPanel createSearch()
 	{
 		JPanel panel = new JPanel(new GridBagLayout());
-		Border boder = BorderFactory.createTitledBorder("Search");
-		panel.setBorder(boder);
+		Border border = BorderFactory.createTitledBorder("Search");
+		panel.setBorder(border);
 
 		GridBagConstraints c = new GridBagConstraints();
 		c.insets = new Insets(2, 2, 2, 2);
@@ -179,8 +187,8 @@ public class MTop extends JPanel
 	private JPanel createCount()
 	{
 		JPanel panel = new JPanel(new GridBagLayout());
-		Border boder = BorderFactory.createTitledBorder("Count");
-		panel.setBorder(boder);
+		Border border = BorderFactory.createTitledBorder("Count");
+		panel.setBorder(border);
 
 		GridBagConstraints c = new GridBagConstraints();
 		c.insets = new Insets(2, 2, 2, 2);
@@ -241,19 +249,19 @@ public class MTop extends JPanel
 		c.anchor = GridBagConstraints.LINE_END;
 		panel.add(labelTotalMetarsValue, c);
 
-		// Total METAR not decoded
-		JLabel labelTotalMetarNotDecoded = new JLabel("Total METAR not decoded");
+		// Not decoded METARs
+		JLabel labelTotalMetarNotDecoded = new JLabel("Not decoded METARs");
 		c.gridx = 2;
 		c.gridy = 1;
 		c.anchor = GridBagConstraints.LINE_END;
 		panel.add(labelTotalMetarNotDecoded, c);
 
-		labelTotalMetarNotDecodedValue = new JLabel("0");
-		labelTotalMetarNotDecodedValue.setFont(boldFont);
+		labelMetarNotDecodedValue = new JLabel("0");
+		labelMetarNotDecodedValue.setFont(boldFont);
 		c.gridx = 3;
 		c.gridy = 1;
 		c.anchor = GridBagConstraints.LINE_END;
-		panel.add(labelTotalMetarNotDecodedValue, c);
+		panel.add(labelMetarNotDecodedValue, c);
 
 		return panel;
 	}
@@ -265,6 +273,6 @@ public class MTop extends JPanel
 		labelVisibleAirportsValue.setText(MFormat.instance.numberFormatDecimal0.format(_visibleAirports));
 		labelFoundAirportsValue.setText(MFormat.instance.numberFormatDecimal0.format(_foundAirports));
 		labelTotalMetarsValue.setText(MFormat.instance.numberFormatDecimal0.format(_totalMetars));
-		labelTotalMetarNotDecodedValue.setText(MFormat.instance.numberFormatDecimal0.format(_totalMetarNotDecoded));
+		labelMetarNotDecodedValue.setText(MFormat.instance.numberFormatDecimal0.format(_totalMetarNotDecoded));
 	}
 }

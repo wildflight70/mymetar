@@ -36,9 +36,9 @@ public class MNOAAFTP
 	private String password;
 	private String remoteDir;
 
-	public boolean download()
+	public boolean download(TaskDownloadUpdate _update)
 	{
-		Logger.debug("download begin");
+		Logger.info("download begin");
 
 		boolean ok = true;
 
@@ -46,8 +46,8 @@ public class MNOAAFTP
 		if (!localDir.exists())
 			localDir.mkdir();
 
-		int processors = Runtime.getRuntime().availableProcessors();
-		Logger.debug(processors + " processors");
+		int processors = Math.min(24, Runtime.getRuntime().availableProcessors());
+		Logger.info(processors + " processors");
 
 		ExecutorService executor = Executors.newFixedThreadPool(processors);
 		List<Future<Void>> futures = new ArrayList<>();
@@ -69,7 +69,7 @@ public class MNOAAFTP
 			FTPFile[] files = ftpClient.listFiles();
 			for (FTPFile file : files)
 				if (file.isFile())
-					futures.add(executor.submit(new TaskDownload(file)));
+					futures.add(executor.submit(new TaskDownload(_update, file)));
 
 			ftpClient.logout();
 			ftpClient.disconnect();
@@ -94,17 +94,24 @@ public class MNOAAFTP
 		ArrayList<MMetar> metars = read();
 		write(metars);
 
-		Logger.debug("download end");
+		Logger.info("download end");
 
 		return ok;
 	}
 
+	public static interface TaskDownloadUpdate
+	{
+		public void run(String _file, boolean _status);
+	}
+
 	private class TaskDownload implements Callable<Void>
 	{
+		private TaskDownloadUpdate update;
 		private FTPFile file;
 
-		public TaskDownload(FTPFile _file)
+		public TaskDownload(TaskDownloadUpdate _update, FTPFile _file)
 		{
+			update = _update;
 			file = _file;
 		}
 
@@ -123,7 +130,10 @@ public class MNOAAFTP
 			ftpClient.logout();
 			ftpClient.disconnect();
 
-			Logger.debug("Downloaded " + file + " : " + success);
+			if (update != null)
+				update.run(server + "/" + file.getName(), success);
+
+			Logger.info("Downloaded " + file + " : " + success);
 
 			return null;
 		}
@@ -131,7 +141,7 @@ public class MNOAAFTP
 
 	private ArrayList<MMetar> read()
 	{
-		Logger.debug("read begin");
+		Logger.info("read begin");
 
 		int processors = Runtime.getRuntime().availableProcessors();
 
@@ -169,7 +179,7 @@ public class MNOAAFTP
 			metars.add(metar);
 		});
 
-		Logger.debug("read end");
+		Logger.info("read end");
 
 		return metars;
 	}
