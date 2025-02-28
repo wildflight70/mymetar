@@ -205,6 +205,7 @@ public class MMetarDefinitions
 		cloudCoverageRemarks = new HashMap<String, String>();
 		cloudCoverageRemarks.put("AC", "Altocumulus");
 		cloudCoverageRemarks.put("AS", "Altostratus");
+		cloudCoverageRemarks.put("CC", "Cirro-cumulus");
 		cloudCoverageRemarks.put("CI", "Cirrus");
 		cloudCoverageRemarks.put("CS", "Cirrostratus");
 		cloudCoverageRemarks.put("CU", "Cumulus");

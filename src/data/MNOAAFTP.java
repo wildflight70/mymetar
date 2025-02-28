@@ -46,7 +46,7 @@ public class MNOAAFTP
 		if (!localDir.exists())
 			localDir.mkdir();
 
-		int processors = Runtime.getRuntime().availableProcessors();
+		int processors = Math.min(24, Runtime.getRuntime().availableProcessors());
 		Logger.info(processors + " processors");
 
 		ExecutorService executor = Executors.newFixedThreadPool(processors);

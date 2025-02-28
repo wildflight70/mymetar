@@ -35,21 +35,27 @@ public class MMetar
 	private static final Pattern PATTERN_REMARK_SEA_LEVEL_PRESSURE = Pattern.compile("(SLP\\d{3})");
 	private static final Pattern PATTERN_REMARK_PRECISE_TEMPERATURE = Pattern.compile("(T\\d{8})");
 	private static final Pattern PATTERN_REMARK_PRESSURE_TENDENCY = Pattern.compile("\\b(PRESFR|PRESRR|5\\d{4})");
-	private static final Pattern PATTERN_REMARK_SENSOR = Pattern.compile("\\b(CHINO|PNO|PWINO|RVRNO|VISNO|TSNO|FZRANO|FROIN)");
+	private static final Pattern PATTERN_REMARK_SENSOR = Pattern
+			.compile("\\b(CHINO|PNO|PWINO|RVRNO|VISNO|TSNO|FZRANO|FROIN)");
 	private static final Pattern PATTERN_REMARK_MISSING = Pattern
 			.compile("\\b(WIND|CLD|WX|VIS|PCPN|PRES|DP|ICE|DENSITY\\sALT|T)\\sMISG");
 	private static final Pattern PATTERN_REMARK_SKY_COVERAGE = Pattern
-			.compile("((AC|AS|CI|CS|CU|FG|HZ|NS|SC|SF|SN|ST)\\d){1,}");
+			.compile("((AC|AS|CC|CI|CS|CU|FG|HZ|NS|SC|SF|SN|ST)\\d){1,}");
 	private static final Pattern PATTERN_REMARK_ALTIMETER = Pattern.compile("(A)(\\d{4})");
 	private static final Pattern PATTERN_REMARK_WEATHER = Pattern.compile("\\b(CIG|ICE|RAG|SNW|HALO)(\\sMISG)?");
 	private static final Pattern PATTERN_REMARK_LAST_STATIONARY_FLIGHT_DIRECTION = Pattern
 			.compile("\\b((LST|LAST|LAAST)\\s?(STAFFED|STFD|STGFD)?)");
+
+	private static String REMARK_NEXT_OBSERVATION = "(OBS(/|\\s)(NEXT|NXT)(/|\\s|\\sOBS)?(?<day1>\\d{2})?\\s?(?<hour1>\\d{2})(?<minute1>\\d{2})\\s?Z)";
+	private static String REMARK_NEXT_OBSERVATION_2 = "(OBS/NXT\\s(?<day2>\\d{2})@(?<hour2>\\d{2})(?<minute2>)Z)";
+	private static String REMARK_NEXT_OBSERVATION_3 = "(OBS/(?<day3>\\d{2})(?<hour3>\\d{2})(?<minute3>\\d{2})Z)";
+	private static String REMARK_NEXT_OBSERVATION_4 = "(OBS\\s?/?\\s?(NEXT|NXT)(/|\\s)(?<day4>\\d{2})(?<hour4>\\d{2})(?<minute4>\\d{2})\\s?UTC)";
+	private static String REMARK_NEXT_OBSERVATION_5 = "(OBS/NEXT\\s(?<day5>\\d{2})(?<hour5>\\d{2})(?<minute5>\\d{2}))";
+
 	private static final Pattern PATTERN_REMARK_NEXT_OBSERVATION = Pattern
-			.compile("/?((OB(S)?)?\\s?/\\s?(NEXT|NXT)?\\s?/?(OBS\\s)?(\\d\\d)?\\s?(\\d\\d)(\\d\\d)\\s?(UTC|Z)?)");
-	private static final Pattern PATTERN_REMARK_NEXT_OBSERVATION_2 = Pattern
-			.compile("(OBS/NXT\\s(\\d+)@(\\d+)Z)");
-	private static final Pattern PATTERN_REMARK_NEXT_OBSERVATION_3 = Pattern
-			.compile("(OBS/;NXT\\s(\\d{2})(\\d{2})(\\d{2})Z)");
+			.compile("(" + REMARK_NEXT_OBSERVATION + "|" + REMARK_NEXT_OBSERVATION_2 + "|" + REMARK_NEXT_OBSERVATION_3 + "|"
+					+ REMARK_NEXT_OBSERVATION_4 + "|" + REMARK_NEXT_OBSERVATION_5 + ")");
+
 	private static final Pattern PATTERN_REMARK_CLOUDS = Pattern
 			.compile("\\b(ST\\sTR|CI\\sTR|SF\\sTR|SC\\sTR|SC\\sOP|SC\\sCL|AC\\sTR|AC\\sOP\\AC\\sCUGEN|CB|TCU|OCNL\\sBLSN)");
 	private static final Pattern PATTERN_REMARK_DENSITY_ALTITUDE = Pattern.compile("\\b(DENSITY\\sALT\\s(-?\\d+)FT)");
@@ -756,235 +762,268 @@ public class MMetar
 		}
 	}
 
+	private void decodeRemarksAutomatedStationTypes()
+	{
+		Matcher matcher = PATTERN_REMARK_AUTOMATED_STATION_TYPES.matcher(rawTextAfterRMK);
+		if (matcher.find())
+		{
+			String rawStationType = matcher.group(1);
+			String stationType = MMetarDefinitions.instance.automatedStationTypeRemarks.get(rawStationType);
+			if (stationType != null)
+			{
+				remarks.add(new MRemark(rawStationType, stationType));
+				highLightAfterRMK(rawStationType);
+			}
+		}
+	}
+
+	private void decodeRemarksSeaLevelPressure()
+	{
+		Matcher matcher = PATTERN_REMARK_SEA_LEVEL_PRESSURE.matcher(rawTextAfterRMK);
+		if (matcher.find())
+		{
+			String rawSeaLevelPressure = matcher.group(1);
+			double pressure = Double.parseDouble(rawSeaLevelPressure.substring(3));
+			if (pressure < 200.0)
+				pressure = pressure / 10.0 + 1000.0;
+			else
+				pressure = pressure / 10.0 + 900.0;
+			remarks.add(new MRemark(rawSeaLevelPressure,
+					"Sea level pressure=" + MFormat.instance.numberFormatDecimal1.format(pressure) + " hPa"));
+			highLightAfterRMK(rawSeaLevelPressure);
+		}
+	}
+
+	private void decodeRemarksPreciseTemperature()
+	{
+		Matcher matcher = PATTERN_REMARK_PRECISE_TEMPERATURE.matcher(rawTextAfterRMK);
+		if (matcher.find())
+		{
+			String rawPreciseTemperature = matcher.group(1);
+			String temperatureSign = rawPreciseTemperature.substring(1, 2);
+			double temperature = Integer.parseInt(rawPreciseTemperature.substring(2, 5)) / 10.0;
+			if (temperatureSign.equals("1"))
+				temperature = -temperature;
+			String dewPointSign = rawPreciseTemperature.substring(5, 6);
+			double dewPoint = Integer.parseInt(rawPreciseTemperature.substring(6)) / 10.0;
+			if (dewPointSign.equals("1"))
+				dewPoint = -dewPoint;
+			remarks.add(new MRemark(rawPreciseTemperature,
+					"Precise temperature=" + MFormat.instance.numberFormatDecimal1.format(temperature) + "°C" + ", dew point="
+							+ MFormat.instance.numberFormatDecimal1.format(dewPoint) + "°C"));
+			highLightAfterRMK(rawPreciseTemperature);
+		}
+	}
+
+	private void decodeRemarksPressureTendency()
+	{
+		Matcher matcher = PATTERN_REMARK_PRESSURE_TENDENCY.matcher(rawTextAfterRMK);
+		if (matcher.find())
+		{
+			String rawPressureTendency = matcher.group(1);
+			if (rawPressureTendency.equals("PRESFR"))
+				remarks.add(new MRemark(rawPressureTendency, "Pressure falling rapidly"));
+			else if (rawPressureTendency.equals("PRESRR"))
+				remarks.add(new MRemark(rawPressureTendency, "Pressure rising rapidly"));
+			else
+			{
+				String trend = rawPressureTendency.substring(1, 2);
+				String pressureSign = rawPressureTendency.substring(2, 3);
+				double pressure = Double.parseDouble(rawPressureTendency.substring(3)) / 10.0;
+				if (pressureSign.equals("1"))
+					pressure = -pressure;
+				remarks.add(new MRemark(rawPressureTendency, "Pressure tendency="
+						+ MMetarDefinitions.instance.pressureTendencyRemarks.get(trend) + ", " + pressure + " hPa change"));
+			}
+			highLightAfterRMK(rawPressureTendency);
+		}
+	}
+
+	private void decodeRemarksSensors()
+	{
+		Matcher matcher = PATTERN_REMARK_SENSOR.matcher(rawTextAfterRMK);
+		while (matcher.find())
+		{
+			String rawSensor = matcher.group(1);
+			String sensor = MMetarDefinitions.instance.sensorRemarks.get(rawSensor);
+			if (sensor != null)
+			{
+				remarks.add(new MRemark(rawSensor, sensor));
+				highLightAfterRMK(rawSensor);
+			}
+		}
+	}
+
+	private void decodeRemarksMissingWeather()
+	{
+		Matcher matcher = PATTERN_REMARK_MISSING.matcher(rawTextAfterRMK);
+		while (matcher.find())
+		{
+			String rawMissing = matcher.group(1) + " MISG";
+			String missing = MMetarDefinitions.instance.dataMissingRemarks.get(rawMissing);
+			if (missing != null)
+			{
+				remarks.add(new MRemark(rawMissing, missing));
+				highLightAfterRMK(rawMissing);
+			}
+		}
+	}
+
+	private void decodeRemarksSkyCoverage()
+	{
+		Matcher matcher = PATTERN_REMARK_SKY_COVERAGE.matcher(rawTextAfterRMK);
+		while (matcher.find())
+		{
+			String rawMatch = matcher.group();
+			StringBuffer buffer = new StringBuffer();
+			for (int i = 0; i < rawMatch.length(); i += 3)
+			{
+				String cloudType = MMetarDefinitions.instance.cloudCoverageRemarks.get(rawMatch.substring(i, i + 2));
+				int cover = Integer.parseInt(rawMatch.substring(i + 2, i + 3));
+				buffer.append(cloudType + "=" + cover + "/8");
+				if (i < rawMatch.length() - 3)
+					buffer.append(", ");
+			}
+
+			remarks.add(new MRemark(rawMatch, buffer.toString()));
+			highLightAfterRMK(rawMatch);
+		}
+	}
+
+	private void decodeRemarksAltimeter()
+	{
+		Matcher matcher = PATTERN_REMARK_ALTIMETER.matcher(rawTextAfterRMK);
+		if (matcher.find())
+		{
+			String rawAltimeter = matcher.group(2);
+			String rawMatch = "A" + rawAltimeter;
+			double altimeter = Integer.parseInt(rawAltimeter) / 100.0;
+			remarks.add(new MRemark(rawMatch, altimeter + " inHg"));
+			highLightAfterRMK(rawMatch);
+		}
+	}
+
+	private void decodeRemarksWeather()
+	{
+		Matcher matcher = PATTERN_REMARK_WEATHER.matcher(rawTextAfterRMK);
+		while (matcher.find())
+		{
+			String rawWeather = matcher.group(1);
+			String rawMissing = matcher.group(2);
+			if (rawMissing == null)
+			{
+				String weather = MMetarDefinitions.instance.weatherRemarks.get(rawWeather);
+				remarks.add(new MRemark(rawWeather, weather));
+				highLightAfterRMK(rawWeather);
+			}
+		}
+	}
+
+	private void decodeRemarksLastStationaryFlightDirection()
+	{
+		Matcher matcher = PATTERN_REMARK_LAST_STATIONARY_FLIGHT_DIRECTION.matcher(rawTextAfterRMK);
+		if (matcher.find())
+		{
+			String rawMatch = matcher.group(1);
+
+			remarks.add(new MRemark(rawMatch, "Last stationary flight direction"));
+			highLightAfterRMK(rawMatch);
+		}
+	}
+
+	private void decodeRemarksNextObservation()
+	{
+		Matcher matcher = PATTERN_REMARK_NEXT_OBSERVATION.matcher(rawTextAfterRMK);
+		if (matcher.find())
+		{
+			String rawMatch = matcher.group(0);
+
+			String rawDay = null;
+			String rawHour = null;
+			String rawMinute = null;
+			for (int g = 1; g <= 5; g++)
+			{
+				if (rawDay == null)
+					rawDay = matcher.group("day" + g);
+				if (rawHour == null)
+					rawHour = matcher.group("hour" + g);
+				if (rawMinute == null)
+					rawMinute = matcher.group("minute" + g);
+			}
+
+			int day = rawDay == null ? observationTime.getDayOfMonth() : Integer.parseInt(rawDay);
+			String minute = rawMinute == null ? "" : rawMinute;
+
+			remarks.add(new MRemark(rawMatch, "Next observation at " + day + "th " + rawHour + ":" + minute + "Z"));
+			highLightAfterRMK(rawMatch);
+		}
+	}
+
+	private void decodeRemarksClouds()
+	{
+		Matcher matcher = PATTERN_REMARK_CLOUDS.matcher(rawTextAfterRMK);
+		while (matcher.find())
+		{
+			String rawMatch = matcher.group(1);
+			String cloud = MMetarDefinitions.instance.cloudRemarks.get(rawMatch);
+			remarks.add(new MRemark(rawMatch, cloud));
+			highLightAfterRMK(rawMatch);
+		}
+	}
+
+	private void decodeRemarksDensityAltitude()
+	{
+		Matcher matcher = PATTERN_REMARK_DENSITY_ALTITUDE.matcher(rawTextAfterRMK);
+		if (matcher.find())
+		{
+			String rawMatch = matcher.group(1);
+			String rawAltitude = matcher.group(2);
+			int altitude = Integer.parseInt(rawAltitude);
+			remarks.add(new MRemark(rawMatch, "Density altitude=" + altitude + " ft"));
+			highLightAfterRMK(rawMatch);
+		}
+	}
+
+	private void decodeRemarksColor()
+	{
+		Matcher matcher = PATTERN_COLOR.matcher(rawTextAfterRMK);
+		if (matcher.find())
+		{
+			String rawMatch = matcher.group(1);
+			String color = MMetarDefinitions.instance.colorRemarks.get(rawMatch);
+			remarks.add(new MRemark(rawMatch, color));
+			highLightAfterRMK(rawMatch);
+		}
+	}
+
+	private void decodeRemarksMaintenance()
+	{
+		if (rawTextAfterRMK.endsWith("$"))
+		{
+			remarks.add(new MRemark("$", "Maintenance needed at the station"));
+			highLightAfterRMK("$");
+		}
+	}
+
 	private void decodeRemarks()
 	{
 		if (rawTextAfterRMK != null)
 		{
-			Matcher matcher = PATTERN_REMARK_AUTOMATED_STATION_TYPES.matcher(rawTextAfterRMK);
-			if (matcher.find())
-			{
-				String rawStationType = matcher.group(1);
-				String stationType = MMetarDefinitions.instance.automatedStationTypeRemarks.get(rawStationType);
-				if (stationType != null)
-				{
-					remarks.add(new MRemark(rawStationType, stationType));
-					highLightAfterRMK(rawStationType);
-				}
-			}
-
-			matcher = PATTERN_REMARK_SEA_LEVEL_PRESSURE.matcher(rawTextAfterRMK);
-			if (matcher.find())
-			{
-				String rawSeaLevelPressure = matcher.group(1);
-				double pressure = Double.parseDouble(rawSeaLevelPressure.substring(3));
-				if (pressure < 200.0)
-					pressure = pressure / 10.0 + 1000.0;
-				else
-					pressure = pressure / 10.0 + 900.0;
-				remarks.add(new MRemark(rawSeaLevelPressure,
-						"Sea level pressure=" + MFormat.instance.numberFormatDecimal1.format(pressure) + " hPa"));
-				highLightAfterRMK(rawSeaLevelPressure);
-			}
-
-			matcher = PATTERN_REMARK_PRECISE_TEMPERATURE.matcher(rawTextAfterRMK);
-			if (matcher.find())
-			{
-				String rawPreciseTemperature = matcher.group(1);
-				String temperatureSign = rawPreciseTemperature.substring(1, 2);
-				double temperature = Integer.parseInt(rawPreciseTemperature.substring(2, 5)) / 10.0;
-				if (temperatureSign.equals("1"))
-					temperature = -temperature;
-				String dewPointSign = rawPreciseTemperature.substring(5, 6);
-				double dewPoint = Integer.parseInt(rawPreciseTemperature.substring(6)) / 10.0;
-				if (dewPointSign.equals("1"))
-					dewPoint = -dewPoint;
-				remarks.add(new MRemark(rawPreciseTemperature,
-						"Precise temperature=" + MFormat.instance.numberFormatDecimal1.format(temperature) + "°C" + ", dew point="
-								+ MFormat.instance.numberFormatDecimal1.format(dewPoint) + "°C"));
-				highLightAfterRMK(rawPreciseTemperature);
-			}
-
-			matcher = PATTERN_REMARK_PRESSURE_TENDENCY.matcher(rawTextAfterRMK);
-			if (matcher.find())
-			{
-				String rawPressureTendency = matcher.group(1);
-				if (rawPressureTendency.equals("PRESFR"))
-					remarks.add(new MRemark(rawPressureTendency, "Pressure falling rapidly"));
-				else if (rawPressureTendency.equals("PRESRR"))
-					remarks.add(new MRemark(rawPressureTendency, "Pressure rising rapidly"));
-				else
-				{
-					String trend = rawPressureTendency.substring(1, 2);
-					String pressureSign = rawPressureTendency.substring(2, 3);
-					double pressure = Double.parseDouble(rawPressureTendency.substring(3)) / 10.0;
-					if (pressureSign.equals("1"))
-						pressure = -pressure;
-					remarks.add(new MRemark(rawPressureTendency, "Pressure tendency="
-							+ MMetarDefinitions.instance.pressureTendencyRemarks.get(trend) + ", " + pressure + " hPa change"));
-				}
-				highLightAfterRMK(rawPressureTendency);
-			}
-
-			// Sensors
-			matcher = PATTERN_REMARK_SENSOR.matcher(rawTextAfterRMK);
-			while (matcher.find())
-			{
-				String rawSensor = matcher.group(1);
-				String sensor = MMetarDefinitions.instance.sensorRemarks.get(rawSensor);
-				if (sensor != null)
-				{
-					remarks.add(new MRemark(rawSensor, sensor));
-					highLightAfterRMK(rawSensor);
-				}
-			}
-
-			// Missing weather
-			matcher = PATTERN_REMARK_MISSING.matcher(rawTextAfterRMK);
-			while (matcher.find())
-			{
-				String rawMissing = matcher.group(1) + " MISG";
-				String missing = MMetarDefinitions.instance.dataMissingRemarks.get(rawMissing);
-				if (missing != null)
-				{
-					remarks.add(new MRemark(rawMissing, missing));
-					highLightAfterRMK(rawMissing);
-				}
-			}
-
-			// Sky coverage
-			matcher = PATTERN_REMARK_SKY_COVERAGE.matcher(rawTextAfterRMK);
-			while (matcher.find())
-			{
-				String rawMatch = matcher.group();
-				StringBuffer buffer = new StringBuffer();
-				for (int i = 0; i < rawMatch.length(); i += 3)
-				{
-					String cloudType = MMetarDefinitions.instance.cloudCoverageRemarks.get(rawMatch.substring(i, i + 2));
-					int cover = Integer.parseInt(rawMatch.substring(i + 2, i + 3));
-					buffer.append(cloudType + "=" + cover + "/8");
-					if (i < rawMatch.length() - 3)
-						buffer.append(", ");
-				}
-
-				remarks.add(new MRemark(rawMatch, buffer.toString()));
-				highLightAfterRMK(rawMatch);
-			}
-
-			// Altimeter
-			matcher = PATTERN_REMARK_ALTIMETER.matcher(rawTextAfterRMK);
-			if (matcher.find())
-			{
-				String rawAltimeter = matcher.group(2);
-				String rawMatch = "A" + rawAltimeter;
-				double altimeter = Integer.parseInt(rawAltimeter) / 100.0;
-				remarks.add(new MRemark(rawMatch, altimeter + " inHg"));
-				highLightAfterRMK(rawMatch);
-			}
-
-			// Weather
-			matcher = PATTERN_REMARK_WEATHER.matcher(rawTextAfterRMK);
-			while (matcher.find())
-			{
-				String rawWeather = matcher.group(1);
-				String rawMissing = matcher.group(2);
-				if (rawMissing == null)
-				{
-					String weather = MMetarDefinitions.instance.weatherRemarks.get(rawWeather);
-					remarks.add(new MRemark(rawWeather, weather));
-					highLightAfterRMK(rawWeather);
-				}
-			}
-
-			// Last stationary flight direction
-			matcher = PATTERN_REMARK_LAST_STATIONARY_FLIGHT_DIRECTION.matcher(rawTextAfterRMK);
-			if (matcher.find())
-			{
-				String rawMatch = matcher.group(1);
-
-				remarks.add(new MRemark(rawMatch, "Last stationary flight direction"));
-				highLightAfterRMK(rawMatch);
-			}
-
-			// Next observation
-			matcher = PATTERN_REMARK_NEXT_OBSERVATION.matcher(rawTextAfterRMK);
-			if (matcher.find())
-			{
-				String rawMatch = matcher.group(1);
-				String rawDay = matcher.group(6);
-				int day = rawDay == null ? observationTime.getDayOfMonth() : Integer.parseInt(rawDay);
-				String rawHour = matcher.group(7);
-				String rawMinute = matcher.group(8);
-
-				remarks.add(new MRemark(rawMatch, "Next observation at " + day + "th " + rawHour + ":" + rawMinute + "Z"));
-				highLightAfterRMK(rawMatch);
-			}
-			else
-			{
-				matcher = PATTERN_REMARK_NEXT_OBSERVATION_2.matcher(rawTextAfterRMK);
-				if (matcher.find())
-				{
-					String rawMatch = matcher.group(1);
-					String rawDay = matcher.group(2);
-					int day = Integer.parseInt(rawDay);
-					String rawHour = matcher.group(3);
-
-					remarks.add(new MRemark(rawMatch, "Next observation at " + day + "th " + rawHour + ":00Z"));
-					highLightAfterRMK(rawMatch);
-				}
-				else
-				{
-					matcher = PATTERN_REMARK_NEXT_OBSERVATION_3.matcher(rawTextAfterRMK);
-					if (matcher.find())
-					{
-						String rawMatch = matcher.group(1);
-						String rawDay = matcher.group(2);
-						int day = Integer.parseInt(rawDay);
-						String rawHour = matcher.group(3);
-						String rawMinute = matcher.group(4);
-
-						remarks.add(new MRemark(rawMatch, "Next observation at " + day + "th " + rawHour + ":" + rawMinute + "Z"));
-						highLightAfterRMK(rawMatch);
-					}
-				}
-			}
-
-			// Clouds
-			matcher = PATTERN_REMARK_CLOUDS.matcher(rawTextAfterRMK);
-			while (matcher.find())
-			{
-				String rawMatch = matcher.group(1);
-				String cloud = MMetarDefinitions.instance.cloudRemarks.get(rawMatch);
-				remarks.add(new MRemark(rawMatch, cloud));
-				highLightAfterRMK(rawMatch);
-			}
-
-			// Density altitude
-			matcher = PATTERN_REMARK_DENSITY_ALTITUDE.matcher(rawTextAfterRMK);
-			if (matcher.find())
-			{
-				String rawMatch = matcher.group(1);
-				String rawAltitude = matcher.group(2);
-				int altitude = Integer.parseInt(rawAltitude);
-				remarks.add(new MRemark(rawMatch, "Density altitude=" + altitude + " ft"));
-				highLightAfterRMK(rawMatch);
-			}
-
-			// Color
-			matcher = PATTERN_COLOR.matcher(rawTextAfterRMK);
-			if (matcher.find())
-			{
-				String rawMatch = matcher.group(1);
-				String color = MMetarDefinitions.instance.colorRemarks.get(rawMatch);
-				remarks.add(new MRemark(rawMatch, color));
-				highLightAfterRMK(rawMatch);
-			}
-
-			// Maintenance
-			if (rawTextAfterRMK.endsWith("$"))
-			{
-				remarks.add(new MRemark("$", "Maintenance needed at the station"));
-				highLightAfterRMK("$");
-			}
+			decodeRemarksAutomatedStationTypes();
+			decodeRemarksSeaLevelPressure();
+			decodeRemarksPreciseTemperature();
+			decodeRemarksPressureTendency();
+			decodeRemarksSensors();
+			decodeRemarksMissingWeather();
+			decodeRemarksSkyCoverage();
+			decodeRemarksAltimeter();
+			decodeRemarksWeather();
+			decodeRemarksLastStationaryFlightDirection();
+			decodeRemarksNextObservation();
+			decodeRemarksClouds();
+			decodeRemarksDensityAltitude();
+			decodeRemarksColor();
+			decodeRemarksMaintenance();
 		}
 	}
 
