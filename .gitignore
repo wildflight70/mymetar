@@ -26,3 +26,6 @@ replay_pid*
 /bin/
 /dist/
 /temp/
+/nbproject/private/
+/nbbuild/
+/nb-build.xml

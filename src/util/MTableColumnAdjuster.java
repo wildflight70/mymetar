@@ -9,8 +9,8 @@ import javax.swing.table.TableColumnModel;
 
 public class MTableColumnAdjuster
 {
-	private JTable table;
-	private int spacing = 6;
+	private final JTable table;
+	private final int spacing = 6;
 
 	public MTableColumnAdjuster(JTable _table)
 	{
@@ -20,73 +20,65 @@ public class MTableColumnAdjuster
 	public void adjustColumns()
 	{
 		TableColumnModel tcm = table.getColumnModel();
+		int columnCount = tcm.getColumnCount();
 
-		for (int i = 0; i < tcm.getColumnCount(); i++)
+		for (int i = 0; i < columnCount; i++)
 			adjustColumn(i);
 	}
 
 	public void adjustColumn(int _column)
 	{
-		TableColumn tableColumn = table.getColumnModel().getColumn(_column);
+		TableColumnModel columnModel = table.getColumnModel();
+		TableColumn column = columnModel.getColumn(_column);
 
-		if (!tableColumn.getResizable())
+		if (!column.getResizable())
 			return;
 
-		int columnHeaderWidth = getColumnHeaderWidth(_column);
-		int columnDataWidth = getColumnDataWidth(_column);
-		int preferredWidth = Math.max(columnHeaderWidth, columnDataWidth);
+		int headerWidth = getColumnHeaderWidth(column);
+		int dataWidth = getColumnDataWidth(_column);
+		int preferredWidth = Math.max(headerWidth, dataWidth) + spacing;
 
-		updateTableColumn(_column, preferredWidth);
+		updateTableColumn(column, preferredWidth);
 	}
 
-	private int getColumnHeaderWidth(int _column)
+	private int getColumnHeaderWidth(TableColumn _column)
 	{
-		TableColumn tableColumn = table.getColumnModel().getColumn(_column);
-		Object value = tableColumn.getHeaderValue();
-		TableCellRenderer renderer = tableColumn.getHeaderRenderer();
+		Object value = _column.getHeaderValue();
+		TableCellRenderer renderer = _column.getHeaderRenderer();
 
 		if (renderer == null)
 			renderer = table.getTableHeader().getDefaultRenderer();
 
-		Component c = renderer.getTableCellRendererComponent(table, value, false, false, -1, _column);
+		Component c = renderer.getTableCellRendererComponent(table, value, false, false, -1, _column.getModelIndex());
 		return c.getPreferredSize().width;
 	}
 
 	private int getColumnDataWidth(int _column)
 	{
 		int preferredWidth = 0;
-		int maxWidth = table.getColumnModel().getColumn(_column).getMaxWidth();
+		TableColumn column = table.getColumnModel().getColumn(_column);
+		int maxWidth = column.getMaxWidth();
 
-		for (int row = 0; row < table.getRowCount(); row++)
+		int rowCount = table.getRowCount();
+		for (int row = 0; row < rowCount; row++)
 		{
 			preferredWidth = Math.max(preferredWidth, getCellDataWidth(row, _column));
 
 			if (preferredWidth >= maxWidth)
-				break;
+				return maxWidth;
 		}
-
 		return preferredWidth;
 	}
 
 	private int getCellDataWidth(int _row, int _column)
 	{
-		TableCellRenderer cellRenderer = table.getCellRenderer(_row, _column);
-		Component c = table.prepareRenderer(cellRenderer, _row, _column);
-		int width = c.getPreferredSize().width + table.getIntercellSpacing().width;
-
-		return width;
+		Component c = table.prepareRenderer(table.getCellRenderer(_row, _column), _row, _column);
+		return c.getPreferredSize().width + table.getIntercellSpacing().width;
 	}
 
-	private void updateTableColumn(int _column, int _width)
+	private void updateTableColumn(TableColumn _column, int _width)
 	{
-		final TableColumn tableColumn = table.getColumnModel().getColumn(_column);
-
-		if (!tableColumn.getResizable())
-			return;
-
-		_width += spacing;
-
-		table.getTableHeader().setResizingColumn(tableColumn);
-		tableColumn.setWidth(_width);
+		table.getTableHeader().setResizingColumn(_column);
+		_column.setWidth(_width);
 	}
 }
