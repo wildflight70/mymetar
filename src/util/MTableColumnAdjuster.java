@@ -29,35 +29,35 @@ public class MTableColumnAdjuster
 	public void adjustColumn(int _column)
 	{
 		TableColumnModel columnModel = table.getColumnModel();
-		TableColumn column = columnModel.getColumn(_column);
+		TableColumn tableColumn = columnModel.getColumn(_column);
 
-		if (!column.getResizable())
+		if (!tableColumn.getResizable())
 			return;
 
-		int headerWidth = getColumnHeaderWidth(column);
+		int headerWidth = getColumnHeaderWidth(tableColumn);
 		int dataWidth = getColumnDataWidth(_column);
 		int preferredWidth = Math.max(headerWidth, dataWidth) + spacing;
 
-		updateTableColumn(column, preferredWidth);
+		updateTableColumn(tableColumn, preferredWidth);
 	}
 
-	private int getColumnHeaderWidth(TableColumn _column)
+	private int getColumnHeaderWidth(TableColumn _tableColumn)
 	{
-		Object value = _column.getHeaderValue();
-		TableCellRenderer renderer = _column.getHeaderRenderer();
+		Object value = _tableColumn.getHeaderValue();
+		TableCellRenderer renderer = _tableColumn.getHeaderRenderer();
 
 		if (renderer == null)
 			renderer = table.getTableHeader().getDefaultRenderer();
 
-		Component c = renderer.getTableCellRendererComponent(table, value, false, false, -1, _column.getModelIndex());
+		Component c = renderer.getTableCellRendererComponent(table, value, false, false, -1, _tableColumn.getModelIndex());
 		return c.getPreferredSize().width;
 	}
 
 	private int getColumnDataWidth(int _column)
 	{
 		int preferredWidth = 0;
-		TableColumn column = table.getColumnModel().getColumn(_column);
-		int maxWidth = column.getMaxWidth();
+		TableColumn tableColumn = table.getColumnModel().getColumn(_column);
+		int maxWidth = tableColumn.getMaxWidth();
 
 		int rowCount = table.getRowCount();
 		for (int row = 0; row < rowCount; row++)
