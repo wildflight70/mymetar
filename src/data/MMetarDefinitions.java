@@ -50,6 +50,7 @@ public class MMetarDefinitions
 		colorRemarks.put("RED", "Red, low IFR conditions");
 	
 		colorRemarks.put("BLACKBLU", "Black blue, excellent VFR conditions");
+		colorRemarks.put("BLACKGRN", "Black blue, good VFR conditions");
 		colorRemarks.put("BLU", "Blue, good VFR conditions");
 		colorRemarks.put("BLU+", "Blue, optimal VFR conditions");
 		colorRemarks.put("GRN", "Green, VFR conditions");
@@ -77,37 +78,37 @@ public class MMetarDefinitions
 		weathers = new HashMap<String, String>();
 		weathers.put("-", "Light");
 		weathers.put("+", "Heavy");
-		weathers.put("VC", "In vicinity");
 		weathers.put("RE", "Recent");
+		weathers.put("VC", "In vicinity");
 
-		weathers.put("MI", "Shallow");
 		weathers.put("BC", "Patches");
-		weathers.put("DR", "Low drifting");
 		weathers.put("BL", "Blowing");
+		weathers.put("DR", "Low drifting");
+		weathers.put("FZ", "Freezing");
+		weathers.put("MI", "Shallow");
 		weathers.put("SH", "Showers");
 		weathers.put("TS", "Thunderstorm");
-		weathers.put("FZ", "Freezing");
 
-		weathers.put("VCSH", "Vicinity showers");
-		weathers.put("RA", "Rain");
+		weathers.put("BR", "Mist");
+		weathers.put("DS", "Dust storm");
+		weathers.put("DU", "Widespread dust");
 		weathers.put("DZ", "Drizzle");
-		weathers.put("SN", "Snow");
-		weathers.put("SG", "Snow grains");
-		weathers.put("IC", "Ice crystals");
-		weathers.put("PL", "Ice pellets");
+		weathers.put("FC", "Funnel cloud");
+		weathers.put("FG", "Fog");
+		weathers.put("FU", "Smoke");
 		weathers.put("GR", "Hail");
 		weathers.put("GS", "Small hail");
-		weathers.put("FG", "Fog");
-		weathers.put("BR", "Mist");
 		weathers.put("HZ", "Haze");
-		weathers.put("FU", "Smoke");
-		weathers.put("VA", "Volcanic ash");
-		weathers.put("DU", "Widespread dust");
+		weathers.put("RA", "Rain");
 		weathers.put("SA", "Sand");
 		weathers.put("SQ", "Squall");
-		weathers.put("FC", "Funnel cloud");
+		weathers.put("IC", "Ice crystals");
+		weathers.put("PL", "Ice pellets");
+		weathers.put("SG", "Snow grains");
+		weathers.put("SN", "Snow");
 		weathers.put("SS", "Sandstorm");
-		weathers.put("DS", "Dust storm");
+		weathers.put("VA", "Volcanic ash");
+		weathers.put("VCSH", "Vicinity showers");
 	}
 
 	private void initPressureTendencyRemarks()
@@ -244,8 +245,11 @@ public class MMetarDefinitions
 		weatherRemarks.put("CLD", "Clouds");
 		weatherRemarks.put("CLD EMBD", "Embedded clouds");
 		weatherRemarks.put("CVCTV", "Convective clouds");
+		weatherRemarks.put("FU ALQDS", "Smoke in all quadrants");
 		weatherRemarks.put("ICE", "Ice");
+		weatherRemarks.put("LGT ICG", "Light ice crystals");
 		weatherRemarks.put("RAG", "Ragged clouds");
+		weatherRemarks.put("SMOKE FU ALL QUADS", "Smoke in all quadrants");
 		weatherRemarks.put("SNW", "Halo");
 		weatherRemarks.put("WX", "Weather");
 	}

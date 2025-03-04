@@ -344,7 +344,7 @@ public class MMetar
 		rawTextHighlight = buffer.toString();
 	}
 
-	private static final Pattern PATTERN_COLOR = Pattern.compile("\\b(AMB|(BLACK)?BLU|GRN|RED|WHT|YLO)\\+?");
+	private static final Pattern PATTERN_COLOR = Pattern.compile("\\b(AMB|(BLACK)?BLU|(BLACK)?GRN|RED|WHT|YLO)\\+?");
 
 	private void decodeColor()
 	{
@@ -822,7 +822,8 @@ public class MMetar
 		}
 	}
 
-	private static final Pattern PATTERN_REMARK_PRECISE_TEMPERATURE = Pattern.compile("\\bT(\\d)(\\d{3})((\\d)(\\d{3}))?");
+	private static final Pattern PATTERN_REMARK_PRECISE_TEMPERATURE = Pattern
+			.compile("\\bT(\\d)(\\d{3})((\\d)(\\d{3}))?");
 
 	private void decodeRemarksPreciseTemperature()
 	{
@@ -900,7 +901,7 @@ public class MMetar
 
 	private static final Pattern PATTERN_REMARK_SKY_COVERAGE = Pattern
 			.compile("\\b((AC|ACC|AS|BLSN|CC|CF|CI|CS|CU|FG|HZ|IC|NS|SC|SF|SN|ST)\\d){1,}");
-	private static final Pattern PATTERN_REMARK_SKY_COVERATE_ALTITUDE = Pattern.compile("\\b(\\d)(CU|SC|AC)(\\d+)?");
+	private static final Pattern PATTERN_REMARK_SKY_COVERATE_ALTITUDE = Pattern.compile("\\b(\\d)(CI|CU|SC|AC)(\\d+)?");
 
 	private void decodeRemarksSkyCoverage()
 	{
@@ -965,13 +966,13 @@ public class MMetar
 			String rawMatch = matcher.group(0);
 			String rawAltimeter = matcher.group(1);
 			double altimeter = Integer.parseInt(rawAltimeter) / 100.0;
-			remarks.add(new MRemark(rawMatch, altimeter + " inHg"));
+			remarks.add(new MRemark(rawMatch, "Altimeter=" + altimeter + " inHg"));
 			highLightAfterRMK(rawMatch);
 		}
 	}
 
-	private static final Pattern PATTERN_REMARK_WEATHER = Pattern
-			.compile("\\b(CIG|CLD(\\sEMBD)?|CVCTV|DP|HALO|ICE|PCPN|RAG|SNW|VIS|WX)(\\d{3}|\\sMISG)?\\b");
+	private static final Pattern PATTERN_REMARK_WEATHER = Pattern.compile(
+			"\\b(CIG|CLD(\\sEMBD)?|CVCTV|DP|(SMOKE\\s)?FU\\s(ALQDS|ALL\\sQUADS)|HALO|ICE|LGT\\sICG|PCPN|RAG|SNW|VIS|WX)(\\d{3}|\\sMISG)?\\b");
 
 	private void decodeRemarksWeather()
 	{
@@ -980,7 +981,7 @@ public class MMetar
 		{
 			String rawMatch = matcher.group(0);
 			String rawWeather = matcher.group(1);
-			String rawAltitudeMissing = matcher.group(3);
+			String rawAltitudeMissing = matcher.group(5);
 
 			String weather = MMetarDefinitions.instance.weatherRemarks.get(rawWeather);
 			if (rawAltitudeMissing == null)
@@ -992,6 +993,29 @@ public class MMetar
 				int altimeter = Integer.parseInt(rawAltitudeMissing) * 100;
 				remarks.add(new MRemark(rawWeather, weather + " at " + altimeter + " ft"));
 			}
+			highLightAfterRMK(rawMatch);
+		}
+	}
+
+	private static final Pattern PATTERN_REMARK_WEATHER_AMOUNT = Pattern.compile("\\b(I|P)(\\d{4})");
+
+	private void decodeRemarksWeatherAmount()
+	{
+		Matcher matcher = PATTERN_REMARK_WEATHER_AMOUNT.matcher(rawTextAfterRMK);
+		if (matcher.find())
+		{
+			String rawMatch = matcher.group(0);
+			String rawType = matcher.group(1);
+			String rawAmount = matcher.group(2);
+
+			String type = "";
+			if (rawType.equals("I"))
+				type = "Ice";
+			else if (rawType.equals("P"))
+				type = "Precipitation";
+			double amount = Double.parseDouble(rawAmount) / 100.0;
+
+			remarks.add(new MRemark(rawMatch, type + "=" + amount + " inches in the past hour"));
 			highLightAfterRMK(rawMatch);
 		}
 	}
@@ -1134,6 +1158,7 @@ public class MMetar
 			decodeRemarksSkyCoverage();
 			decodeRemarksAltimeter();
 			decodeRemarksWeather();
+			decodeRemarksWeatherAmount();
 			decodeRemarksLastStationaryFlightDirection();
 			decodeRemarksNextObservation();
 			decodeRemarksClouds();
