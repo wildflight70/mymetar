@@ -17,7 +17,6 @@ public class MMetarDefinitions
 	public HashMap<String, String> pressureTendencyRemarks;
 	public HashMap<String, String> automatedStationTypeRemarks;
 	public HashMap<String, String> sensorRemarks;
-	public HashMap<String, String> dataMissingRemarks;
 	public HashMap<String, String> skyCoverageRemarks;
 	public HashMap<String, String> cloudRemarks;
 	public HashMap<String, String> weatherRemarks;
@@ -35,7 +34,6 @@ public class MMetarDefinitions
 		initPressureTendencyRemarks();
 		initAutomatedStationTypeRemarks();
 		initSensorRemarks();
-		initDataMissingRemarks();
 		initSkyCoverageRemarks();
 		initCloudRemarks();
 		initWeatherRemarks();
@@ -51,6 +49,7 @@ public class MMetarDefinitions
 		colorRemarks.put("AMB", "Amber, IFR conditions");
 		colorRemarks.put("RED", "Red, low IFR conditions");
 	
+		colorRemarks.put("BLACKBLU", "Black blue, excellent VFR conditions");
 		colorRemarks.put("BLU", "Blue, good VFR conditions");
 		colorRemarks.put("BLU+", "Blue, optimal VFR conditions");
 		colorRemarks.put("GRN", "Green, VFR conditions");
@@ -61,15 +60,15 @@ public class MMetarDefinitions
 	{
 		covers = new HashMap<String, String>();
 		covers.put("CAVOK", "CAVOK");
+		covers.put("BKN", "Broken");
 		covers.put("CLR", "Clear");
-		covers.put("SKC", "Clear");
+		covers.put("FEW", "Few");
+		covers.put("NCD", "No cloud detected");
 		covers.put("NSC", "No signifiant cloud");
 		covers.put("NSW", "No signifiant weather");
-		covers.put("NCD", "No cloud detected");
-		covers.put("FEW", "Few");
-		covers.put("SCT", "Scattered");
-		covers.put("BKN", "Broken");
 		covers.put("OVC", "Overcast");
+		covers.put("SCT", "Scattered");
+		covers.put("SKC", "Clear");
 		covers.put("VV", "Sky obscured");
 	}
 
@@ -149,21 +148,6 @@ public class MMetarDefinitions
 		sensorRemarks.put("VISNO", "Visibility sensor not operational");
 	}
 
-	private void initDataMissingRemarks()
-	{
-		dataMissingRemarks = new HashMap<String, String>();
-		dataMissingRemarks.put("WIND MISG", "Wind missing");
-		dataMissingRemarks.put("CLD MISG", "Clouds missing");
-		dataMissingRemarks.put("WX MISG", "Weather missing");
-		dataMissingRemarks.put("VIS MISG", "Visibility missing");
-		dataMissingRemarks.put("PCPN MISG", "Precipitation missing");
-		dataMissingRemarks.put("PRES MISG", "Pressure missing");
-		dataMissingRemarks.put("T MISG", "Temperature missing");
-		dataMissingRemarks.put("DP MISG", "Dew point missing");
-		dataMissingRemarks.put("ICE MISG", "Icing missing");
-		dataMissingRemarks.put("DENSITY ALT MISG", "Density altitude missing");
-	}
-
 	private void initRunwayTrends()
 	{
 		runwayTrends = new HashMap<String, String>();
@@ -238,6 +222,7 @@ public class MMetarDefinitions
 		cloudRemarks.put("AC TR", "Altocumulus translucidus");
 		cloudRemarks.put("ACC TR", "Altocumulus castellanus translucidus");
 		cloudRemarks.put("AS TR", "Altostratus translucidus");
+		cloudRemarks.put("BLSN OCNL", "Occasional blowing snow");
 		cloudRemarks.put("CB", "Cumulonimbus");
 		cloudRemarks.put("CF TR", "Cumulus fractus translucidus");
 		cloudRemarks.put("CI TR", "Cirrus translucidus");
@@ -256,8 +241,12 @@ public class MMetarDefinitions
 		weatherRemarks = new HashMap<String, String>();
 		weatherRemarks.put("HALO", "Halo");
 		weatherRemarks.put("CIG", "Ceiling");
+		weatherRemarks.put("CLD", "Clouds");
+		weatherRemarks.put("CLD EMBD", "Embedded clouds");
+		weatherRemarks.put("CVCTV", "Convective clouds");
 		weatherRemarks.put("ICE", "Ice");
 		weatherRemarks.put("RAG", "Ragged clouds");
 		weatherRemarks.put("SNW", "Halo");
+		weatherRemarks.put("WX", "Weather");
 	}
 }

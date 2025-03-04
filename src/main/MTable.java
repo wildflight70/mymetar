@@ -144,8 +144,8 @@ public class MTable extends JTable
 	{
 		JPopupMenu popup = new JPopupMenu();
 
-		JMenuItem menuItemLoadAPI = new JMenuItem("Copy METAR to clipboard");
-		menuItemLoadAPI.addActionListener(new ActionListener()
+		JMenuItem menuItemCopyMetarClipboard = new JMenuItem("Copy METAR to clipboard");
+		menuItemCopyMetarClipboard.addActionListener(new ActionListener()
 		{
 			@Override
 			public void actionPerformed(ActionEvent e)
@@ -153,7 +153,18 @@ public class MTable extends JTable
 				doCopyMetarToClipboard();
 			}
 		});
-		popup.add(menuItemLoadAPI);
+		popup.add(menuItemCopyMetarClipboard);
+
+		JMenuItem menuItemCopyMetarHighlightClipboard = new JMenuItem("Copy highlight METAR to clipboard");
+		menuItemCopyMetarHighlightClipboard.addActionListener(new ActionListener()
+		{
+			@Override
+			public void actionPerformed(ActionEvent e)
+			{
+				doCopyHighlightMetarToClipboard();
+			}
+		});
+		popup.add(menuItemCopyMetarHighlightClipboard);
 
 		addMouseListener(new MouseAdapter()
 		{
@@ -300,6 +311,17 @@ public class MTable extends JTable
 		if (selectedAirport.metar != null)
 		{
 			new MClipboard().copy(selectedAirport.metar.rawText);
+		}
+	}
+
+	private void doCopyHighlightMetarToClipboard()
+	{
+		int selectedRow = getSelectedRow();
+
+		MAirport selectedAirport = model.visibleAirports.get(selectedRow);
+		if (selectedAirport.metar != null)
+		{
+			new MClipboard().copy(selectedAirport.metar.rawTextHighlight);
 		}
 	}
 

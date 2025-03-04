@@ -37,6 +37,12 @@ public class MMetar
 	public ArrayList<MCloud> clouds;
 	public ArrayList<MRunwayVisualRange> runwayVisualRanges;
 	public ArrayList<MRunwayCondition> runwayConditions;
+	public ArrayList<MRemark> remarks;
+
+	public String extraFlightCategory = "";
+
+	public String rawTextHighlight;
+	public boolean notDecoded;
 
 	private String cloudsString;
 	private String runwayVisualRangesString;
@@ -44,15 +50,17 @@ public class MMetar
 
 	private String rawTextBeforeRMK;
 	private String rawTextAfterRMK;
+	private String rawTextBeforeRMKHighlight;
+	private String rawTextAfterRMKHighlight;
 
 	public class MRunwayVisualRange
 	{
-		String runway;
-		String minMoreLess; // null, <, >
-		int minVisibility = -1;
-		String maxMoreLess; // null, <, >
-		int maxVisibility = -1;
-		String trend; // null, (U)p, (D)own, (N)o change
+		public String runway;
+		public String minMoreLess; // null, <, >
+		public int minVisibility = -1;
+		public String maxMoreLess; // null, <, >
+		public int maxVisibility = -1;
+		public String trend; // null, (U)p, (D)own, (N)o change
 
 		public MRunwayVisualRange(String _runway, String _minMoreLess, int _minVisibility, String _maxMoreLess,
 				int _maxVisibility, String _trend)
@@ -68,11 +76,11 @@ public class MMetar
 
 	public class MRunwayCondition
 	{
-		String runway;
-		String contaminationType;
-		String coverage;
-		int depth;
-		String brakinkAction;
+		public String runway;
+		public String contaminationType;
+		public String coverage;
+		public int depth;
+		public String brakinkAction;
 
 		public MRunwayCondition(String _runway, String _contaminationType, String _coverage, int _depth,
 				String _brakingAction)
@@ -102,16 +110,6 @@ public class MMetar
 			return field + ":" + remark;
 		}
 	}
-
-	public ArrayList<MRemark> remarks;
-
-	public String extraFlightCategory = "";
-
-	public String rawTextHighlight;
-	public boolean notDecoded;
-
-	private String rawTextBeforeRMKHighlight;
-	private String rawTextAfterRMKHighlight;
 
 	public class MCloud
 	{
@@ -346,17 +344,22 @@ public class MMetar
 		rawTextHighlight = buffer.toString();
 	}
 
-	private static final Pattern PATTERN_COLOR = Pattern.compile("\\b(AMB|BLACK|BLU|GRN|RED|WHT|YLO)\\+?");
+	private static final Pattern PATTERN_COLOR = Pattern.compile("\\b(AMB|(BLACK)?BLU|GRN|RED|WHT|YLO)\\+?");
 
 	private void decodeColor()
 	{
-		Matcher matcher = PATTERN_COLOR.matcher(rawTextBeforeRMK);
-		if (matcher.find())
+		Matcher matcher = PATTERN_COLOR.matcher(rawTextBeforeRMKHighlight);
+		StringBuffer buffer = new StringBuffer();
+		while (matcher.find())
 		{
 			String rawMatch = matcher.group(0);
+
 			color = MMetarDefinitions.instance.colorRemarks.get(rawMatch);
-			highLightBeforeRMK(rawMatch);
+
+			matcher.appendReplacement(buffer, "<b>" + rawMatch + "</b>");
 		}
+		matcher.appendTail(buffer);
+		rawTextBeforeRMKHighlight = buffer.toString();
 	}
 
 	private void decodeNoSignal()
@@ -378,6 +381,12 @@ public class MMetar
 		correction = rawTextBeforeRMK.contains("COR");
 		if (correction)
 			highLightBeforeRMK("COR");
+		else
+		{
+			correction = rawTextBeforeRMK.contains("CCA");
+			if (correction)
+				highLightBeforeRMK("CCA");
+		}
 	}
 
 	private static final Pattern PATTERN_WIND = Pattern.compile("(?:(VRB|\\d{3}))(\\d{2})(?:G(\\d{2}))?(KT|MPS)");
@@ -560,7 +569,7 @@ public class MMetar
 		{
 			if (_items[i].equals("RMK"))
 				return;
-			
+
 			Matcher matcher = PATTERN_ALTIMETER.matcher(_items[i]);
 			if (matcher.find())
 			{
@@ -613,8 +622,8 @@ public class MMetar
 		});
 	}
 
-	private static final Pattern PATTERN_WEATHER = Pattern
-			.compile("(-|\\+|RE|VC)?(BC|BL|DR|FZ|MI|SH|TS)?(VCSH|RA|DZ|SN|SG|IC|PL|GR|GS|FG|BR|HZ|FU|VA|DU|SA|SQ|FC|SS|DS)$");
+	private static final Pattern PATTERN_WEATHER = Pattern.compile(
+			"(-|\\+|RE|VC)?(BC|BL|DR|FZ|MI|SH|TS)?(VCSH|RA|DZ|SN|SG|IC|PL|GR|GS|FG|BR|HZ|FU|VA|DU|SA|SQ|FC|SS|DS|TS)$");
 
 	private void decodeWeather(String[] _items)
 	{
@@ -813,7 +822,7 @@ public class MMetar
 		}
 	}
 
-	private static final Pattern PATTERN_REMARK_PRECISE_TEMPERATURE = Pattern.compile("T\\d{8}");
+	private static final Pattern PATTERN_REMARK_PRECISE_TEMPERATURE = Pattern.compile("\\bT(\\d)(\\d{3})((\\d)(\\d{3}))?");
 
 	private void decodeRemarksPreciseTemperature()
 	{
@@ -821,17 +830,24 @@ public class MMetar
 		if (matcher.find())
 		{
 			String rawMatch = matcher.group(0);
-			String temperatureSign = rawMatch.substring(1, 2);
-			double temperature = Integer.parseInt(rawMatch.substring(2, 5)) / 10.0;
+			StringBuffer buffer = new StringBuffer();
+
+			String temperatureSign = matcher.group(1);
+			double temperature = Integer.parseInt(matcher.group(2)) / 10.0;
 			if (temperatureSign.equals("1"))
 				temperature = -temperature;
-			String dewPointSign = rawMatch.substring(5, 6);
-			double dewPoint = Integer.parseInt(rawMatch.substring(6)) / 10.0;
-			if (dewPointSign.equals("1"))
-				dewPoint = -dewPoint;
-			remarks
-					.add(new MRemark(rawMatch, "Precise temperature=" + MFormat.instance.numberFormatDecimal1.format(temperature)
-							+ "°C" + ", dew point=" + MFormat.instance.numberFormatDecimal1.format(dewPoint) + "°C"));
+			buffer.append("Precise temperature=" + MFormat.instance.numberFormatDecimal1.format(temperature) + "°C");
+
+			String dewPointSign = matcher.group(4);
+			if (dewPointSign != null)
+			{
+				double dewPoint = Integer.parseInt(matcher.group(5)) / 10.0;
+				if (dewPointSign.equals("1"))
+					dewPoint = -dewPoint;
+				buffer.append(", dew point=" + MFormat.instance.numberFormatDecimal1.format(dewPoint) + "°C");
+			}
+
+			remarks.add(new MRemark(rawMatch, buffer.toString()));
 			highLightAfterRMK(rawMatch);
 		}
 	}
@@ -882,27 +898,9 @@ public class MMetar
 		}
 	}
 
-	private static final Pattern PATTERN_REMARK_MISSING = Pattern
-			.compile("\\b(WIND|CLD|WX|VIS|PCPN|PRES|DP|ICE|DENSITY\\sALT|T)\\sMISG");
-
-	private void decodeRemarksMissingWeather()
-	{
-		Matcher matcher = PATTERN_REMARK_MISSING.matcher(rawTextAfterRMK);
-		while (matcher.find())
-		{
-			String rawMatch = matcher.group(0);
-			String missing = MMetarDefinitions.instance.dataMissingRemarks.get(rawMatch);
-			if (missing != null)
-			{
-				remarks.add(new MRemark(rawMatch, missing));
-				highLightAfterRMK(rawMatch);
-			}
-		}
-	}
-
 	private static final Pattern PATTERN_REMARK_SKY_COVERAGE = Pattern
 			.compile("\\b((AC|ACC|AS|BLSN|CC|CF|CI|CS|CU|FG|HZ|IC|NS|SC|SF|SN|ST)\\d){1,}");
-	private static final Pattern PATTERN_REMARK_SKY_COVERATE_ALTITUDE = Pattern.compile("\\b(\\d)(CU|SC|AC)(\\d+)");
+	private static final Pattern PATTERN_REMARK_SKY_COVERATE_ALTITUDE = Pattern.compile("\\b(\\d)(CU|SC|AC)(\\d+)?");
 
 	private void decodeRemarksSkyCoverage()
 	{
@@ -936,6 +934,7 @@ public class MMetar
 		while (matcher.find())
 		{
 			String rawMatch = matcher.group(0);
+			StringBuffer buffer = new StringBuffer();
 
 			String rawCover = matcher.group(1);
 			String rawCloudType = matcher.group(2);
@@ -943,9 +942,15 @@ public class MMetar
 
 			int cover = Integer.parseInt(rawCover);
 			String cloudType = MMetarDefinitions.instance.skyCoverageRemarks.get(rawCloudType);
-			int altitude = Integer.parseInt(rawAltitude) * 100;
+			buffer.append(cloudType + "=" + cover + "/8");
 
-			remarks.add(new MRemark(rawMatch, cloudType + "=" + cover + "/8 at " + altitude + " ft"));
+			if (rawAltitude != null)
+			{
+				int altitude = Integer.parseInt(rawAltitude) * 100;
+				buffer.append(" at " + altitude + " ft");
+			}
+
+			remarks.add(new MRemark(rawMatch, buffer.toString()));
 			highLightAfterRMK(rawMatch);
 		}
 	}
@@ -965,7 +970,8 @@ public class MMetar
 		}
 	}
 
-	private static final Pattern PATTERN_REMARK_WEATHER = Pattern.compile("\\b(CIG|ICE|RAG|SNW|HALO)(\\sMISG)?");
+	private static final Pattern PATTERN_REMARK_WEATHER = Pattern
+			.compile("\\b(CIG|CLD(\\sEMBD)?|CVCTV|DP|HALO|ICE|PCPN|RAG|SNW|VIS|WX)(\\d{3}|\\sMISG)?\\b");
 
 	private void decodeRemarksWeather()
 	{
@@ -974,13 +980,19 @@ public class MMetar
 		{
 			String rawMatch = matcher.group(0);
 			String rawWeather = matcher.group(1);
-			String rawMissing = matcher.group(2);
-			if (rawMissing == null)
-			{
-				String weather = MMetarDefinitions.instance.weatherRemarks.get(rawWeather);
+			String rawAltitudeMissing = matcher.group(3);
+
+			String weather = MMetarDefinitions.instance.weatherRemarks.get(rawWeather);
+			if (rawAltitudeMissing == null)
 				remarks.add(new MRemark(rawWeather, weather));
-				highLightAfterRMK(rawMatch);
+			else if (rawAltitudeMissing.equals(" MISG"))
+				remarks.add(new MRemark(rawWeather, weather + " missing"));
+			else
+			{
+				int altimeter = Integer.parseInt(rawAltitudeMissing) * 100;
+				remarks.add(new MRemark(rawWeather, weather + " at " + altimeter + " ft"));
 			}
+			highLightAfterRMK(rawMatch);
 		}
 	}
 
@@ -1038,7 +1050,7 @@ public class MMetar
 	}
 
 	private static final Pattern PATTERN_REMARK_CLOUDS = Pattern.compile(
-			"\\b(CF\\sTR|SOG\\sTR|ST\\sTR|CI\\sTR|SF\\sTR|SC\\sTR|SC\\sOP|SC\\sCL|AC\\sTR|ACC\\sTR|AS\\sTR|AC\\sOP\\AC\\sCUGEN|CB|TCU|OCNL\\sBLSN)");
+			"\\b(CF\\sTR|SOG\\sTR|ST\\sTR|CI\\sTR|SF\\sTR|SC\\sTR|SC\\sOP|SC\\sCL|AC\\sTR|ACC\\sTR|AS\\sTR|AC\\sOP\\AC\\sCUGEN|CB|TCU|OCNL\\sBLSN|BLSN\\sOCNL)");
 
 	private void decodeRemarksClouds()
 	{
@@ -1069,14 +1081,19 @@ public class MMetar
 
 	private void decodeRemarksColor()
 	{
-		Matcher matcher = PATTERN_COLOR.matcher(rawTextAfterRMK);
-		if (matcher.find())
+		Matcher matcher = PATTERN_COLOR.matcher(rawTextAfterRMKHighlight);
+		StringBuffer buffer = new StringBuffer();
+		while (matcher.find())
 		{
 			String rawMatch = matcher.group(0);
+
 			String color = MMetarDefinitions.instance.colorRemarks.get(rawMatch);
 			remarks.add(new MRemark(rawMatch, color));
-			highLightAfterRMK(rawMatch);
+
+			matcher.appendReplacement(buffer, "<b>" + rawMatch + "</b>");
 		}
+		matcher.appendTail(buffer);
+		rawTextAfterRMKHighlight = buffer.toString();
 	}
 
 	private static final Pattern PATTERN_REMARK_AIRFIELD_ELEVATION = Pattern.compile("\\bQFE(\\d+)(/(\\d+))?");
@@ -1114,7 +1131,6 @@ public class MMetar
 			decodeRemarksPreciseTemperature();
 			decodeRemarksPressureTendency();
 			decodeRemarksSensors();
-			decodeRemarksMissingWeather();
 			decodeRemarksSkyCoverage();
 			decodeRemarksAltimeter();
 			decodeRemarksWeather();
