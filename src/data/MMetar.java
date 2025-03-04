@@ -603,7 +603,7 @@ public class MMetar
 				String type = matcher.group(3);
 
 				MCloud cloud = new MCloud();
-				cloud.cover = MMetarDefinitions.instance.covers.get(cloudType);
+				cloud.cover = MMetarDefinitions.instance.weathers.get(cloudType);
 				if (type != null)
 					cloud.cover += " " + type;
 				cloud.baseFeet = altitude == null ? -1 : Integer.parseInt(altitude) * 100;
@@ -882,7 +882,7 @@ public class MMetar
 	}
 
 	private static final Pattern PATTERN_REMARK_SENSOR = Pattern
-			.compile("\\b(CHINO|PNO|PWINO|RVRNO|SLPNO|VISNO|TSNO|FZRANO|FROIN)");
+			.compile("\\b(CHINO|PNO|PWINO|RVRNO|SLPNO|VISNO|TSNO|FZRANO|FROIN|WIND\\sSENSOR\\sOFFLINE)");
 
 	private void decodeRemarksSensors()
 	{
@@ -906,7 +906,7 @@ public class MMetar
 	private void decodeRemarksSkyCoverage()
 	{
 		Matcher matcher = PATTERN_REMARK_SKY_COVERAGE.matcher(rawTextAfterRMK);
-		while (matcher.find())
+		if (matcher.find())
 		{
 			String rawMatch = matcher.group(0);
 			StringBuffer buffer = new StringBuffer();
@@ -918,7 +918,7 @@ public class MMetar
 				while (!Character.isDigit(rawMatch.charAt(d)))
 					d++;
 
-				String cloudType = MMetarDefinitions.instance.skyCoverageRemarks.get(rawMatch.substring(i, d));
+				String cloudType = MMetarDefinitions.instance.cloudRemarks.get(rawMatch.substring(i, d));
 				int cover = Integer.parseInt(rawMatch.substring(d, d + 1));
 
 				buffer.append(cloudType + "=" + cover + "/8, ");
@@ -942,7 +942,7 @@ public class MMetar
 			String rawAltitude = matcher.group(3);
 
 			int cover = Integer.parseInt(rawCover);
-			String cloudType = MMetarDefinitions.instance.skyCoverageRemarks.get(rawCloudType);
+			String cloudType = MMetarDefinitions.instance.cloudRemarks.get(rawCloudType);
 			buffer.append(cloudType + "=" + cover + "/8");
 
 			if (rawAltitude != null)
@@ -952,21 +952,6 @@ public class MMetar
 			}
 
 			remarks.add(new MRemark(rawMatch, buffer.toString()));
-			highLightAfterRMK(rawMatch);
-		}
-	}
-
-	private static final Pattern PATTERN_REMARK_ALTIMETER = Pattern.compile("A(\\d{4})");
-
-	private void decodeRemarksAltimeter()
-	{
-		Matcher matcher = PATTERN_REMARK_ALTIMETER.matcher(rawTextAfterRMK);
-		if (matcher.find())
-		{
-			String rawMatch = matcher.group(0);
-			String rawAltimeter = matcher.group(1);
-			double altimeter = Integer.parseInt(rawAltimeter) / 100.0;
-			remarks.add(new MRemark(rawMatch, "Altimeter=" + altimeter + " inHg"));
 			highLightAfterRMK(rawMatch);
 		}
 	}
@@ -983,7 +968,7 @@ public class MMetar
 			String rawWeather = matcher.group(1);
 			String rawAltitudeMissing = matcher.group(5);
 
-			String weather = MMetarDefinitions.instance.weatherRemarks.get(rawWeather);
+			String weather = MMetarDefinitions.instance.cloudRemarks.get(rawWeather);
 			if (rawAltitudeMissing == null)
 				remarks.add(new MRemark(rawWeather, weather));
 			else if (rawAltitudeMissing.equals(" MISG"))
@@ -1016,6 +1001,36 @@ public class MMetar
 			double amount = Double.parseDouble(rawAmount) / 100.0;
 
 			remarks.add(new MRemark(rawMatch, type + "=" + amount + " inches in the past hour"));
+			highLightAfterRMK(rawMatch);
+		}
+	}
+
+	private static final Pattern PATTERN_REMARK_CLOUDS = Pattern.compile(
+			"\\b(CF\\sTR|SOG\\sTR|ST\\sTR|CI\\sTR|SF\\sTR|SC\\sTR|SC\\sOP|SC\\sCL|AC\\sTR|ACC\\sTR|AS\\sTR|AC\\sOP\\AC\\sCUGEN|CB|TCU|OCNL\\sBLSN|BLSN\\sOCNL)");
+
+	private void decodeRemarksClouds()
+	{
+		Matcher matcher = PATTERN_REMARK_CLOUDS.matcher(rawTextAfterRMK);
+		while (matcher.find())
+		{
+			String rawMatch = matcher.group(0);
+			String cloud = MMetarDefinitions.instance.cloudRemarks.get(rawMatch);
+			remarks.add(new MRemark(rawMatch, cloud));
+			highLightAfterRMK(rawMatch);
+		}
+	}
+
+	private static final Pattern PATTERN_REMARK_ALTIMETER = Pattern.compile("A(\\d{4})");
+
+	private void decodeRemarksAltimeter()
+	{
+		Matcher matcher = PATTERN_REMARK_ALTIMETER.matcher(rawTextAfterRMK);
+		if (matcher.find())
+		{
+			String rawMatch = matcher.group(0);
+			String rawAltimeter = matcher.group(1);
+			double altimeter = Integer.parseInt(rawAltimeter) / 100.0;
+			remarks.add(new MRemark(rawMatch, "Altimeter=" + altimeter + " inHg"));
 			highLightAfterRMK(rawMatch);
 		}
 	}
@@ -1073,21 +1088,6 @@ public class MMetar
 		}
 	}
 
-	private static final Pattern PATTERN_REMARK_CLOUDS = Pattern.compile(
-			"\\b(CF\\sTR|SOG\\sTR|ST\\sTR|CI\\sTR|SF\\sTR|SC\\sTR|SC\\sOP|SC\\sCL|AC\\sTR|ACC\\sTR|AS\\sTR|AC\\sOP\\AC\\sCUGEN|CB|TCU|OCNL\\sBLSN|BLSN\\sOCNL)");
-
-	private void decodeRemarksClouds()
-	{
-		Matcher matcher = PATTERN_REMARK_CLOUDS.matcher(rawTextAfterRMK);
-		while (matcher.find())
-		{
-			String rawMatch = matcher.group(0);
-			String cloud = MMetarDefinitions.instance.cloudRemarks.get(rawMatch);
-			remarks.add(new MRemark(rawMatch, cloud));
-			highLightAfterRMK(rawMatch);
-		}
-	}
-
 	private static final Pattern PATTERN_REMARK_DENSITY_ALTITUDE = Pattern.compile("\\bDENSITY\\sALT\\s(-?\\d+)FT");
 
 	private void decodeRemarksDensityAltitude()
@@ -1137,6 +1137,44 @@ public class MMetar
 		}
 	}
 
+	private static final Pattern PATTERN_REMARK_WIND = Pattern
+			.compile("\\bWIND\\s(EST|(?<alt>\\d+)FT\\s(/{5}|(?<dir>\\d{3})(?<speed>\\d{2})(G(?<gust>\\d{2}))?)KT)");
+
+	private void decodeRemarksWind()
+	{
+		Matcher matcher = PATTERN_REMARK_WIND.matcher(rawTextAfterRMK);
+		while (matcher.find())
+		{
+			String rawMatch = matcher.group(0);
+
+			if (rawMatch.equals("WIND EST"))
+				remarks.add(new MRemark(rawMatch, "Wind speed estimated"));
+			else
+			{
+				String rawAltitude = matcher.group("alt");
+				String rawDirection = matcher.group("dir");
+				String rawSpeed = matcher.group("speed");
+				String rawGust = matcher.group("gust");
+
+				int altitude = Integer.parseInt(rawAltitude);
+				int direction = rawDirection == null ? -1 : Integer.parseInt(rawDirection);
+				int speed = rawSpeed == null ? -1 : Integer.parseInt(rawSpeed);
+
+				StringBuffer buffer = new StringBuffer("Wind at " + altitude + " ft");
+				if (direction >= 0)
+					buffer.append(", " + direction + "° at " + speed + " kt");
+				if (rawGust != null)
+				{
+					int gust = Integer.parseInt(rawGust);
+					buffer.append(", gust at " + gust + " kt");
+				}
+
+				remarks.add(new MRemark(rawMatch, buffer.toString()));
+			}
+			highLightAfterRMK(rawMatch);
+		}
+	}
+
 	private void decodeRemarksMaintenance()
 	{
 		if (rawTextAfterRMK.endsWith("$"))
@@ -1165,6 +1203,7 @@ public class MMetar
 			decodeRemarksDensityAltitude();
 			decodeRemarksColor();
 			decodeRemarksAirfieldElevation();
+			decodeRemarksWind();
 			decodeRemarksMaintenance();
 		}
 	}
