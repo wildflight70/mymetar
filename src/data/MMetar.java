@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -402,6 +403,12 @@ public class MMetar
 		noSignal = rawTextBeforeRMK.contains("NOSIG");
 		if (noSignal)
 			highLightBeforeRMK("NOSIG");
+		else
+		{
+			noSignal = rawTextBeforeRMK.contains("RTD");
+			if (noSignal)
+				highLightBeforeRMK("RTD");
+		}
 	}
 
 	private void decodeAuto()
@@ -559,7 +566,7 @@ public class MMetar
 		}
 	}
 
-	private static final Pattern PATTERN_TEMPERATURE = Pattern.compile("(M?\\d{2})/(M?\\d{0,2}$)");
+	private static final Pattern PATTERN_TEMPERATURE = Pattern.compile("(M?\\d{2})/(M?\\d{0,2})$");
 
 	private void decodeTemperature(String[] _items)
 	{
@@ -708,7 +715,7 @@ public class MMetar
 	}
 
 	private static final Pattern PATTERN_RUNWAY_VISUAL_RANGE = Pattern
-			.compile("(R(\\d{2}[LCR]?)/([PM])?(\\d{4})(V([PM])?(\\d{4}))?(FT)?/?([UND])?)\\b");
+			.compile("\\b(R(\\d{2}[LCR]?)/([PM])?(\\d{4})(V([PM])?(\\d{4}))?(FT)?/?([UND])?)");
 	private static final Pattern PATTERN_RUNWAY_VISUAL_RANGE_MISSING = Pattern.compile("\\bR(\\d{2}[LCR]?)//{2,}");
 
 	private void decodeRunwayVisualRange()
@@ -744,7 +751,8 @@ public class MMetar
 				minVisibility = Integer.parseInt(rawMinVisibility);
 			else
 				minVisibility = (int) Math.round(MUnit.feetToMeters(Integer.parseInt(rawMinVisibility)));
-			int maxVisibility = rawMaxVisibility == null ? -1 : Integer.parseInt(rawMaxVisibility);
+			int maxVisibility = rawMaxVisibility == null ? -1
+					: (int) Math.round(MUnit.feetToMeters(Integer.parseInt(rawMaxVisibility)));
 
 			String trend = MMetarDefinitions.instance.runwayTrends.get(rawTrend);
 
@@ -917,21 +925,24 @@ public class MMetar
 	}
 
 	private static final Pattern PATTERN_REMARK_SENSOR = Pattern
-			.compile("\\b(CHINO|PNO|PWINO|RVRNO|SLPNO|VISNO|TSNO|FZRANO|FROIN|WIND\\sSENSOR\\sOFFLINE)");
+			.compile("\\b(CHINO|PNO|PWINO|RVRNO|SLPNO|VISNO|TSNO|FZRANO|FROIN|WIND\\sSENSOR\\sOFFLINE|RTS)");
 
 	private void decodeRemarksSensors()
 	{
-		Matcher matcher = PATTERN_REMARK_SENSOR.matcher(rawTextAfterRMK);
+		Matcher matcher = PATTERN_REMARK_SENSOR.matcher(rawTextAfterRMKHighlight);
+
+		StringBuffer buffer = new StringBuffer();
 		while (matcher.find())
 		{
 			String rawMatch = matcher.group(0);
+
 			String sensor = MMetarDefinitions.instance.sensorRemarks.get(rawMatch);
-			if (sensor != null)
-			{
-				remarks.add(new MRemark(rawMatch, sensor));
-				highLightAfterRMK(" " + rawMatch);
-			}
+			remarks.add(new MRemark(rawMatch, sensor));
+
+			matcher.appendReplacement(buffer, "<b>" + rawMatch + "</b>");
 		}
+		matcher.appendTail(buffer);
+		rawTextAfterRMKHighlight = buffer.toString();
 	}
 
 	private static final Pattern PATTERN_REMARK_SKY_COVERAGE = Pattern
@@ -992,10 +1003,24 @@ public class MMetar
 	}
 
 	private static final Pattern PATTERN_REMARK_WEATHER = Pattern.compile(
-			"\\b(CIG|CLD(\\sEMBD)?|CVCTV|DP|(SMOKE\\s)?FU\\s(ALQDS|ALL\\sQUADS)|HALO|ICE|LGT\\sICG|PCPN|RAG|SNW|VIS|WX)(\\d{3}|\\sMISG)?\\b");
+			"\\b(CIG|CLD(\\sEMBD)?|CVCTV|DP|(SMOKE\\s)?FU\\s(ALQDS|ALL\\sQUADS)|HALO|ICE|LGT\\sICG|PCPN|RAG|VIS|WX)(\\d{3}|\\sMISG)?\\b");
 
 	private void decodeRemarksWeather()
 	{
+		HashMap<String, String> weathers = new HashMap<String, String>();
+		weathers.put("SNW CVR/TRACE LOOSE", "Snow cover, trace amounts, loosely packed");
+		weathers.put("SNOW COVER HARD PACK", "Snow cover is hard-packed");
+		weathers.put("SNW CVR/MUCH LOOSE", "Snow cover is loose and easily lifted by the wind");
+		weathers.put("SNW CVR/MEDIUM PACK", "Snow cover is medium packed");
+		for (String weather : weathers.keySet())
+		{
+			if (rawTextAfterRMK.contains(weather))
+			{
+				remarks.add(new MRemark(weather, weathers.get(weather)));
+				highLightAfterRMK(weather);
+			}
+		}
+
 		Matcher matcher = PATTERN_REMARK_WEATHER.matcher(rawTextAfterRMK);
 		while (matcher.find())
 		{
@@ -1174,6 +1199,8 @@ public class MMetar
 
 	private static final Pattern PATTERN_REMARK_WIND = Pattern
 			.compile("\\bWIND\\s(?<alt>\\d+)FT\\s(?<dir>\\d{3})(?<speed>\\d{2})(G(?<gust>\\d{2}))?KT");
+	private static final Pattern PATTERN_REMARK_PEAK_WIND = Pattern
+			.compile("\\bPK\\sWND\\s(?<dir>\\d{3})(?<speed>\\d{2})/(?<hour>\\d{2})(?<minute>\\d{2})");
 
 	private void decodeRemarksWind()
 	{
@@ -1194,30 +1221,46 @@ public class MMetar
 			{
 				String rawMatch = matcher.group(0);
 
-				if (rawMatch.equals("WIND EST") || rawMatch.equals("WND DATA ESTMD"))
-					remarks.add(new MRemark(rawMatch, "Wind speed estimated"));
-				else
+				String rawAltitude = matcher.group("alt");
+				String rawDirection = matcher.group("dir");
+				String rawSpeed = matcher.group("speed");
+				String rawGust = matcher.group("gust");
+
+				int altitude = Integer.parseInt(rawAltitude);
+				int direction = rawDirection == null ? -1 : Integer.parseInt(rawDirection);
+				int speed = rawSpeed == null ? -1 : Integer.parseInt(rawSpeed);
+
+				StringBuffer buffer = new StringBuffer("Wind at " + altitude + " ft");
+				if (direction >= 0)
+					buffer.append(", " + direction + "° at " + speed + " kt");
+				if (rawGust != null)
 				{
-					String rawAltitude = matcher.group("alt");
-					String rawDirection = matcher.group("dir");
-					String rawSpeed = matcher.group("speed");
-					String rawGust = matcher.group("gust");
-
-					int altitude = Integer.parseInt(rawAltitude);
-					int direction = rawDirection == null ? -1 : Integer.parseInt(rawDirection);
-					int speed = rawSpeed == null ? -1 : Integer.parseInt(rawSpeed);
-
-					StringBuffer buffer = new StringBuffer("Wind at " + altitude + " ft");
-					if (direction >= 0)
-						buffer.append(", " + direction + "° at " + speed + " kt");
-					if (rawGust != null)
-					{
-						int gust = Integer.parseInt(rawGust);
-						buffer.append(", gust at " + gust + " kt");
-					}
-
-					remarks.add(new MRemark(rawMatch, buffer.toString()));
+					int gust = Integer.parseInt(rawGust);
+					buffer.append(", gust at " + gust + " kt");
 				}
+
+				remarks.add(new MRemark(rawMatch, buffer.toString()));
+				highLightAfterRMK(rawMatch);
+			}
+
+			matcher = PATTERN_REMARK_PEAK_WIND.matcher(rawTextAfterRMK);
+			while (matcher.find())
+			{
+				String rawMatch = matcher.group(0);
+				String rawDirection = matcher.group("dir");
+				String rawSpeed = matcher.group("speed");
+				String rawHour = matcher.group("hour");
+				String rawMinute = matcher.group("minute");
+
+				int direction = Integer.parseInt(rawDirection);
+				int speed = Integer.parseInt(rawSpeed);
+				int hour = Integer.parseInt(rawHour);
+				int minute = Integer.parseInt(rawMinute);
+
+				StringBuffer buffer = new StringBuffer(
+						"Peak wind " + direction + "° at " + speed + " kt at " + hour + ":" + minute + "Z");
+
+				remarks.add(new MRemark(rawMatch, buffer.toString()));
 				highLightAfterRMK(rawMatch);
 			}
 		}
@@ -1235,6 +1278,68 @@ public class MMetar
 
 			int accumulation = Integer.parseInt(rawAccumulation);
 			remarks.add(new MRemark(rawMatch, "Possibly snow accumulation of " + accumulation + " cm per hour"));
+
+			highLightAfterRMK(rawMatch);
+		}
+	}
+
+	private static final String REMARK_PRECIPITATIONS = "(DZ|RA|SN|UP)([BE]\\d{2})(E\\d{2})?";
+	private static final Pattern PATTERN_REMARK_PRECIPITATIONS = Pattern
+			.compile("\\b(" + REMARK_PRECIPITATIONS + "){1,}");
+	private static final Pattern PATTERN_REMARK_PRECIPITATIONS_INSIDE = Pattern.compile(REMARK_PRECIPITATIONS);
+
+	private void decodeRemarksPrecipitations()
+	{
+		Matcher matcher = PATTERN_REMARK_PRECIPITATIONS.matcher(rawTextAfterRMK);
+		while (matcher.find())
+		{
+			String rawMatch = matcher.group(0);
+			StringBuffer buffer = new StringBuffer();
+
+			Matcher matcherInside = PATTERN_REMARK_PRECIPITATIONS_INSIDE.matcher(rawMatch);
+			while (matcherInside.find())
+			{
+				String rawPrecipitationType = matcherInside.group(1);
+				String rawFirst = matcherInside.group(2);
+				String rawSecond = matcherInside.group(3);
+
+				String precipitationType = "";
+				if (rawPrecipitationType.equals("DZ"))
+					precipitationType = "Drizzle";
+				else if (rawPrecipitationType.equals("RA"))
+					precipitationType = "Rain";
+				else if (rawPrecipitationType.equals("SN"))
+					precipitationType = "Snow";
+				else if (rawPrecipitationType.equals("UP"))
+					precipitationType = "Temperature rise";
+
+				if (rawFirst.startsWith("B"))
+				{
+					String rawBegin = rawFirst.substring(1, 3);
+					int begin = Integer.parseInt(rawBegin);
+
+					buffer.append(precipitationType + " began " + begin + " min ");
+
+					if (rawSecond != null && rawSecond.startsWith("E"))
+					{
+						String rawEnd = rawSecond.substring(1, 3);
+						int end = Integer.parseInt(rawEnd);
+
+						buffer.append("and ended " + end + " min, ");
+					}
+				}
+				else // E
+				{
+					String rawEnd = rawFirst.substring(1, 3);
+					int end = Integer.parseInt(rawEnd);
+
+					buffer.append(precipitationType + " ended " + end + " min, ");
+				}
+			}
+
+			if (buffer.toString().endsWith(", "))
+				buffer.delete(buffer.length() - 2, buffer.length());
+			remarks.add(new MRemark(rawMatch, buffer.toString()));
 
 			highLightAfterRMK(rawMatch);
 		}
@@ -1270,6 +1375,7 @@ public class MMetar
 			decodeRemarksAirfieldElevation();
 			decodeRemarksWind();
 			decodeRemarksSnowAccumulation();
+			decodeRemarksPrecipitations();
 			decodeRemarksMaintenance();
 		}
 	}

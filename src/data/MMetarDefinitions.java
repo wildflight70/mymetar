@@ -139,6 +139,7 @@ public class MMetarDefinitions
 		sensorRemarks.put("TSNO", "Thunderstorm sensor not operational");
 		sensorRemarks.put("VISNO", "Visibility sensor not operational");
 		sensorRemarks.put("WIND SENSOR OFFLINE", "Wind sensor not operational");
+		sensorRemarks.put("RTS", "Return to service");
 	}
 
 	private void initRunwayTrends()
