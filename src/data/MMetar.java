@@ -55,6 +55,26 @@ public class MMetar
 	private String rawTextBeforeRMKHighlight;
 	private String rawTextAfterRMKHighlight;
 
+	private ArrayList<MItem> items;
+
+	public class MItem
+	{
+		public String field;
+		public String value;
+
+		public MItem(String _field, String _value)
+		{
+			field = _field;
+			value = _value;
+		}
+
+		@Override
+		public String toString()
+		{
+			return field + ":" + value;
+		}
+	}
+
 	public class MRunwayVisualRange
 	{
 		public String runway;
@@ -155,6 +175,7 @@ public class MMetar
 		runwayVisualRanges = new ArrayList<MRunwayVisualRange>();
 		runwayConditions = new ArrayList<MRunwayCondition>();
 		remarks = new ArrayList<MRemark>();
+		items = new ArrayList<MItem>();
 	}
 
 	private void updateRawTextHighLight()
@@ -333,8 +354,11 @@ public class MMetar
 		if (matcher.find())
 		{
 			String rawMatch = matcher.group(0);
+
 			stationId = rawMatch;
+
 			highLightBeforeRMK(rawMatch);
+			items.add(new MItem(rawMatch, "station id=" + stationId));
 		}
 	}
 
@@ -346,6 +370,7 @@ public class MMetar
 		if (matcher.find())
 		{
 			String rawMatch = matcher.group(0);
+
 			String rawDay = matcher.group(1);
 			String rawHour = matcher.group(2);
 			String rawMinute = matcher.group(3);
@@ -361,6 +386,7 @@ public class MMetar
 			}
 
 			highLightBeforeRMK(rawMatch);
+			items.add(new MItem(rawMatch, "observation time=" + observationTime.toString()));
 		}
 	}
 
@@ -386,15 +412,17 @@ public class MMetar
 	{
 		Matcher matcher = PATTERN_COLOR.matcher(rawTextBeforeRMKHighlight);
 		StringBuffer buffer = new StringBuffer();
-		while (matcher.find())
+		if (matcher.find())
 		{
 			String rawMatch = matcher.group(0);
 
 			color = MMetarDefinitions.instance.colorRemarks.get(rawMatch);
 
 			matcher.appendReplacement(buffer, "<b>" + rawMatch + "</b>");
+			items.add(new MItem(rawMatch, "color=" + color));
 		}
 		matcher.appendTail(buffer);
+
 		rawTextBeforeRMKHighlight = buffer.toString();
 	}
 
@@ -1403,11 +1431,12 @@ public class MMetar
 		buffer.append(rawTextHighlight);
 		buffer.append("\n");
 		buffer.append("decoded=" + !notDecoded + "\n");
-		buffer.append("Station id=" + stationId + "\n");
-		buffer.append("Observation time=" + observationTime + "\n");
+		buffer.append("ITEMS\n");
+		for (MItem item : items)
+			buffer.append(item + "\n");
 		buffer.append("REMARKS\n");
 		for (MRemark remark : remarks)
-			buffer.append(remark.field + ":" + remark.remark + "\n");
+			buffer.append(remark + "\n");
 
 		return buffer.toString();
 	}
