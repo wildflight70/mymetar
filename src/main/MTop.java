@@ -27,6 +27,8 @@ import util.MFormat;
 @SuppressWarnings("serial")
 public class MTop extends JPanel
 {
+	private JTextField textFind;
+
 	private JLabel labelTotalAirportsValue;
 	private JLabel labelVisibleAirportsValue;
 	private JLabel labelFoundAirportsValue;
@@ -140,6 +142,8 @@ public class MTop extends JPanel
 				table.updateVisible(checkAirportsWithMetar.isSelected(), checkNotDecodedMetars.isSelected(),
 						(MCountry) comboCountry.getSelectedItem());
 				table.updateTop();
+				table.clearFind();
+				textFind.setText("");
 			}
 		};
 		comboCountry.addActionListener(actionListener);
@@ -165,7 +169,7 @@ public class MTop extends JPanel
 		c.anchor = GridBagConstraints.LINE_END;
 		panel.add(labelFind, c);
 
-		JTextField textFind = new JTextField(10);
+		textFind = new JTextField(10);
 		c.gridx = 1;
 		c.gridy = 0;
 		c.anchor = GridBagConstraints.LINE_START;

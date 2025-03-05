@@ -1,5 +1,6 @@
 package data;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -296,13 +297,8 @@ public class MMetar
 		// 1. Decode before RMK
 		String[] items = rawTextBeforeRMK.split(" ");
 
-		stationId = items[0];
-		highLightBeforeRMK(stationId);
-
-		String time = items[1];
-		if (time.endsWith("Z"))
-			highLightBeforeRMK(time);
-
+		decodeStationId();
+		decodeObservationTime();
 		decodeAltimeter(items);
 		decodeTemperature(items);
 		decodeNoSignal();
@@ -326,6 +322,45 @@ public class MMetar
 
 		// 4. Check if metar is not totally decoded
 		notDecoded();
+	}
+
+	private static final Pattern PATTERN_STATION_ID = Pattern.compile("^([A-Z0-9]+)\\b");
+
+	private void decodeStationId()
+	{
+		Matcher matcher = PATTERN_STATION_ID.matcher(rawTextBeforeRMK);
+		if (matcher.find())
+		{
+			String rawMatch = matcher.group(0);
+			stationId = rawMatch;
+			highLightBeforeRMK(rawMatch);
+		}
+	}
+
+	private static final Pattern PATTERN_OBSERVATION_TIME = Pattern.compile("\\b(\\d{2})(\\d{2})(\\d{2})Z");
+
+	private void decodeObservationTime()
+	{
+		Matcher matcher = PATTERN_OBSERVATION_TIME.matcher(rawTextBeforeRMK);
+		if (matcher.find())
+		{
+			String rawMatch = matcher.group(0);
+			String rawDay = matcher.group(1);
+			String rawHour = matcher.group(2);
+			String rawMinute = matcher.group(3);
+
+			int day = Integer.parseInt(rawDay);
+			int hour = Integer.parseInt(rawHour);
+			int minute = Integer.parseInt(rawMinute);
+
+			if (observationTime == null)
+			{
+				LocalDate now = LocalDate.now();
+				observationTime = LocalDateTime.of(now.getYear(), now.getMonthValue(), day, hour, minute);
+			}
+
+			highLightBeforeRMK(rawMatch);
+		}
 	}
 
 	private static final Pattern PATTERN_SLASH = Pattern.compile("(?<= )/+/+(?= )|/+/+(?=$)|[AQ]/{4}");
@@ -474,7 +509,7 @@ public class MMetar
 	}
 
 	private static final Pattern PATTERN_VISIBILITY = Pattern
-			.compile("\\s(\\d+\\s*\\d*/\\d+|\\d+)(?<unit>SM|KM)\\s|\\s(\\d{4})(NDV)?\\s");
+			.compile("\\s(\\d+\\s*\\d*/\\d+|\\d+)(?<unit>\\sHZSM|SM|KM)\\s|\\s(\\d{4})(NDV)?\\s");
 	private static final Pattern PATTERN_VISIBILITY_EXTRA = Pattern.compile("\\s(\\d{4})(E|S|SE|N|NW|W)\\s");
 
 	private void decodeVisibility(String[] _items)
@@ -1138,39 +1173,69 @@ public class MMetar
 	}
 
 	private static final Pattern PATTERN_REMARK_WIND = Pattern
-			.compile("\\bWIND\\s(EST|(?<alt>\\d+)FT\\s(/{5}|(?<dir>\\d{3})(?<speed>\\d{2})(G(?<gust>\\d{2}))?)KT)");
+			.compile("\\bWIND\\s(?<alt>\\d+)FT\\s(?<dir>\\d{3})(?<speed>\\d{2})(G(?<gust>\\d{2}))?KT");
 
 	private void decodeRemarksWind()
 	{
-		Matcher matcher = PATTERN_REMARK_WIND.matcher(rawTextAfterRMK);
+		if (rawTextAfterRMK.contains("WIND EST"))
+		{
+			remarks.add(new MRemark("WIND EST", "Wind speed estimated"));
+			highLightAfterRMK("WIND EST");
+		}
+		else if (rawTextAfterRMK.contains("WND DATA ESTMD"))
+		{
+			remarks.add(new MRemark("WND DATA ESTMD", "Wind speed estimated"));
+			highLightAfterRMK("WND DATA ESTMD");
+		}
+		else
+		{
+			Matcher matcher = PATTERN_REMARK_WIND.matcher(rawTextAfterRMK);
+			while (matcher.find())
+			{
+				String rawMatch = matcher.group(0);
+
+				if (rawMatch.equals("WIND EST") || rawMatch.equals("WND DATA ESTMD"))
+					remarks.add(new MRemark(rawMatch, "Wind speed estimated"));
+				else
+				{
+					String rawAltitude = matcher.group("alt");
+					String rawDirection = matcher.group("dir");
+					String rawSpeed = matcher.group("speed");
+					String rawGust = matcher.group("gust");
+
+					int altitude = Integer.parseInt(rawAltitude);
+					int direction = rawDirection == null ? -1 : Integer.parseInt(rawDirection);
+					int speed = rawSpeed == null ? -1 : Integer.parseInt(rawSpeed);
+
+					StringBuffer buffer = new StringBuffer("Wind at " + altitude + " ft");
+					if (direction >= 0)
+						buffer.append(", " + direction + "° at " + speed + " kt");
+					if (rawGust != null)
+					{
+						int gust = Integer.parseInt(rawGust);
+						buffer.append(", gust at " + gust + " kt");
+					}
+
+					remarks.add(new MRemark(rawMatch, buffer.toString()));
+				}
+				highLightAfterRMK(rawMatch);
+			}
+		}
+	}
+
+	private static final Pattern PATTERN_REMARK_SNOW_ACCUMULATION = Pattern.compile("/S(\\d{1,2})/");
+
+	private void decodeRemarksSnowAccumulation()
+	{
+		Matcher matcher = PATTERN_REMARK_SNOW_ACCUMULATION.matcher(rawTextAfterRMK);
 		while (matcher.find())
 		{
 			String rawMatch = matcher.group(0);
+			String rawAccumulation = matcher.group(1);
 
-			if (rawMatch.equals("WIND EST"))
-				remarks.add(new MRemark(rawMatch, "Wind speed estimated"));
-			else
-			{
-				String rawAltitude = matcher.group("alt");
-				String rawDirection = matcher.group("dir");
-				String rawSpeed = matcher.group("speed");
-				String rawGust = matcher.group("gust");
+			int accumulation = Integer.parseInt(rawAccumulation);
+			remarks.add(new MRemark(rawMatch, "Possibly snow accumulation of " + accumulation + " cm per hour"));
 
-				int altitude = Integer.parseInt(rawAltitude);
-				int direction = rawDirection == null ? -1 : Integer.parseInt(rawDirection);
-				int speed = rawSpeed == null ? -1 : Integer.parseInt(rawSpeed);
-
-				StringBuffer buffer = new StringBuffer("Wind at " + altitude + " ft");
-				if (direction >= 0)
-					buffer.append(", " + direction + "° at " + speed + " kt");
-				if (rawGust != null)
-				{
-					int gust = Integer.parseInt(rawGust);
-					buffer.append(", gust at " + gust + " kt");
-				}
-
-				remarks.add(new MRemark(rawMatch, buffer.toString()));
-			}
 			highLightAfterRMK(rawMatch);
 		}
 	}
@@ -1204,6 +1269,7 @@ public class MMetar
 			decodeRemarksColor();
 			decodeRemarksAirfieldElevation();
 			decodeRemarksWind();
+			decodeRemarksSnowAccumulation();
 			decodeRemarksMaintenance();
 		}
 	}
@@ -1224,7 +1290,27 @@ public class MMetar
 		}
 	}
 
+	public String debug()
+	{
+		StringBuffer buffer = new StringBuffer(rawText);
+		buffer.append("\n");
+		buffer.append(rawTextHighlight);
+		buffer.append("\n");
+		buffer.append("decoded=" + !notDecoded + "\n");
+		buffer.append("Station id=" + stationId + "\n");
+		buffer.append("Observation time=" + observationTime + "\n");
+		buffer.append("REMARKS\n");
+		for (MRemark remark : remarks)
+			buffer.append(remark.field + ":" + remark.remark + "\n");
+
+		return buffer.toString();
+	}
+
 	public static void main(String[] args)
 	{
+		MMetar metar = new MMetar((LocalDateTime) null,
+				"K7W4 281255Z AUTO 25003KT 10SM SCT060 08/M04 A2989 RMK AO1 T00751044");
+		metar.decode();
+		System.out.println(metar.debug());
 	}
 }

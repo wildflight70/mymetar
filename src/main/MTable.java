@@ -340,4 +340,11 @@ public class MTable extends JTable
 		MTop.instance.update(model.getTotalAirports(), model.getVisibleAirports(), findRows.size(), model.getTotalMetars(),
 				model.getTotalMetarNotDecoded());
 	}
+
+	public void clearFind()
+	{
+		findText = "";
+		findRow = 0;
+		findRows.clear();
+	}
 }

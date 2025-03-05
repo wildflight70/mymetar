@@ -121,6 +121,7 @@ public class MMetarDefinitions
 		automatedStationTypeRemarks.put("A01", "Automated station without a precipitation sensor");
 		automatedStationTypeRemarks.put("AO1", "Automated station without a precipitation sensor");
 		automatedStationTypeRemarks.put("A02", "Automated station with a precipitation sensor");
+		automatedStationTypeRemarks.put("A02A", "Automated station with a precipitation sensor");
 		automatedStationTypeRemarks.put("AO2", "Automated station with a precipitation sensor");
 		automatedStationTypeRemarks.put("AO2A", "Automated station with a precipitation sensor");
 	}
