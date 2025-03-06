@@ -206,18 +206,18 @@ public class MMetar
 	public String highlight()
 	{
 		StringBuffer buffer = new StringBuffer("<html>");
-		buffer.append(highlight(rawTextBeforeRMK));
+		buffer.append(highlight(items, rawTextBeforeRMK));
 		if (rawTextAfterRMK != null)
 			buffer.append(" <b>RMK</b> ");
 		buffer.append("</html>");
 		return buffer.toString();
 	}
 
-	public String highlight(String _text)
+	public String highlight(ArrayList<MItem> _items, String _text)
 	{
 		StringBuffer buffer = new StringBuffer();
 		int posText = 0;
-		for (MItem item : items)
+		for (MItem item : _items)
 		{
 			buffer.append(_text.substring(posText, item.begin));
 			buffer.append("<b>");
@@ -467,7 +467,7 @@ public class MMetar
 			color += MMetarDefinitions.instance.colorRemarks.get(rawMatch) + ", ";
 
 			matcher.appendReplacement(buffer, "<b>" + rawMatch + "</b>");
-			items.add(new MItem(rawMatch, "color=" + color, begin, end));
+			items.add(new MItem(rawMatch, "Color=" + color, begin, end));
 		}
 		matcher.appendTail(buffer);
 
@@ -645,7 +645,10 @@ public class MMetar
 					visibilitySM = Math.round(10.0 * MUnit.metersToSM(visibilitySM)) / 10.0;
 					visibilityNonDirectionalVariation = rawVisibilityIndicator != null && rawVisibilityIndicator.equals("NDV");
 					highLightBeforeRMK(rawMatch);
-					items.add(new MItem(rawMatch, "Visibility=" + visibilitySM + " SM non directional variation", begin, end));
+					StringBuffer buffer = new StringBuffer("Visibility=" + visibilitySM + " SM");
+					if(visibilityNonDirectionalVariation)
+						buffer.append(" SM non directional variation");
+					items.add(new MItem(rawMatch, buffer.toString(), begin, end));
 				}
 			}
 		}
@@ -942,11 +945,14 @@ public class MMetar
 		if (matcher.find())
 		{
 			String rawMatch = matcher.group(0);
+			int begin = matcher.start(0);
+			int end = matcher.end(0);
+
 			String rawElevation = matcher.group(1);
 
 			double elevation = Double.parseDouble(rawElevation);
-			remarks.add(new MRemark(rawMatch,
-					"Airfield elevation=" + MFormat.instance.numberFormatDecimal1.format(elevation) + " hPa"));
+			items.add(new MItem(rawMatch,
+					"Airfield elevation=" + MFormat.instance.numberFormatDecimal1.format(elevation) + " hPa", begin, end));
 			highLightBeforeRMK(rawMatch);
 		}
 	}
