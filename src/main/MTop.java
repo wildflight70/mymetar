@@ -133,6 +133,19 @@ public class MTop extends JPanel
 		c.anchor = GridBagConstraints.LINE_END;
 		panel.add(comboCountry, c);
 
+		// METAR
+		JLabel labelMetar = new JLabel("METAR");
+		c.gridx = 0;
+		c.gridy = 3;
+		c.anchor = GridBagConstraints.LINE_END;
+		panel.add(labelMetar, c);
+
+		JTextField textMetar = new JTextField(10);
+		c.gridx = 1;
+		c.gridy = 3;
+		c.anchor = GridBagConstraints.LINE_START;
+		panel.add(textMetar, c);
+
 		// Listeners
 		ActionListener actionListener = new ActionListener()
 		{
@@ -140,7 +153,7 @@ public class MTop extends JPanel
 			public void actionPerformed(ActionEvent e)
 			{
 				table.updateVisible(checkAirportsWithMetar.isSelected(), checkNotDecodedMetars.isSelected(),
-						(MCountry) comboCountry.getSelectedItem());
+						(MCountry) comboCountry.getSelectedItem(), textMetar.getText().trim());
 				table.updateTop();
 				table.clearFind();
 				textFind.setText("");
@@ -149,6 +162,22 @@ public class MTop extends JPanel
 		comboCountry.addActionListener(actionListener);
 		checkAirportsWithMetar.addActionListener(actionListener);
 		checkNotDecodedMetars.addActionListener(actionListener);
+
+		textMetar.addKeyListener(new KeyAdapter()
+		{
+			@Override
+			public void keyReleased(KeyEvent e)
+			{
+				if (e.getKeyCode() == KeyEvent.VK_ENTER)
+				{
+					table.updateVisible(checkAirportsWithMetar.isSelected(), checkNotDecodedMetars.isSelected(),
+							(MCountry) comboCountry.getSelectedItem(), textMetar.getText().trim());
+					table.updateTop();
+					table.clearFind();
+					textFind.setText("");
+				}
+			}
+		});
 
 		return panel;
 	}

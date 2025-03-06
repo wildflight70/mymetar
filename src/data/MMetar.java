@@ -39,6 +39,7 @@ public class MMetar
 	public ArrayList<MCloud> clouds;
 	public ArrayList<MRunwayVisualRange> runwayVisualRanges;
 	public ArrayList<MRunwayCondition> runwayConditions;
+	public String temporary = "";
 	public ArrayList<MRemark> remarks;
 
 	public String extraFlightCategory = "";
@@ -55,6 +56,8 @@ public class MMetar
 	private String rawTextBeforeRMKHighlight;
 	private String rawTextAfterRMKHighlight;
 
+	private int posTempoBeforeRMK = -1;
+
 	private ArrayList<MItem> items;
 
 	public class MItem
@@ -62,16 +65,21 @@ public class MMetar
 		public String field;
 		public String value;
 
-		public MItem(String _field, String _value)
+		public int begin;
+		public int end;
+
+		public MItem(String _field, String _value, int _begin, int _end)
 		{
 			field = _field;
 			value = _value;
+			begin = _begin;
+			end = _end;
 		}
 
 		@Override
 		public String toString()
 		{
-			return field + ":" + value;
+			return field + ":" + value + " [" + begin + "-" + end + "]";
 		}
 	}
 
@@ -137,6 +145,18 @@ public class MMetar
 	{
 		public String cover;
 		public int baseFeet = -1;
+
+		@Override
+		public String toString()
+		{
+			StringBuffer buffer = new StringBuffer(cover);
+			if (baseFeet >= 0)
+			{
+				buffer.append(" at ");
+				buffer.append(MFormat.instance.numberFormatDecimal0.format(baseFeet));
+			}
+			return buffer.toString();
+		}
 	}
 
 	public MMetar(LocalDateTime _observationTime, String _raw, String _stationId)
@@ -162,6 +182,7 @@ public class MMetar
 	{
 		observationTime = _observationTime;
 		rawText = _raw.trim();
+
 		String[] raws = rawText.split("RMK");
 		rawTextBeforeRMK = raws[0].trim();
 		rawTextBeforeRMKHighlight = rawTextBeforeRMK;
@@ -170,6 +191,8 @@ public class MMetar
 			rawTextAfterRMK = raws[1].trim();
 			rawTextAfterRMKHighlight = rawTextAfterRMK;
 		}
+
+		posTempoBeforeRMK = rawTextBeforeRMK.indexOf("TEMPO");
 
 		clouds = new ArrayList<MCloud>();
 		runwayVisualRanges = new ArrayList<MRunwayVisualRange>();
@@ -180,10 +203,29 @@ public class MMetar
 
 	private void updateRawTextHighLight()
 	{
+		if (posTempoBeforeRMK >= 0)
+			rawTextBeforeRMKHighlight = rawTextBeforeRMKHighlight.replace("TEMPO", "<b>TEMPO</b>");
+
 		rawTextHighlight = "<html>" + rawTextBeforeRMKHighlight;
 		if (rawTextAfterRMK != null)
 			rawTextHighlight += " <b>RMK</b> " + rawTextAfterRMKHighlight;
 		rawTextHighlight += "</html>";
+	}
+
+	public String highlight(String _text)
+	{
+		StringBuffer buffer = new StringBuffer();
+		int posText = 0;
+		for (MItem item : items)
+		{
+			buffer.append(_text.substring(posText, item.begin));
+			buffer.append("<b>");
+			buffer.append(item.field);
+			buffer.append("</b>");
+			posText = item.end;
+		}
+		buffer.append(_text.substring(posText));
+		return buffer.toString();
 	}
 
 	public String cloudsToString()
@@ -194,16 +236,7 @@ public class MMetar
 			for (int i = 0; i < clouds.size(); i++)
 			{
 				MCloud cloud = clouds.get(i);
-				buffer.append(cloud.cover);
-
-				if (cloud.cover.equals("CAVOK") || cloud.cover.equals("CLR"))
-					continue;
-
-				if (cloud.baseFeet >= 0)
-				{
-					buffer.append(" at ");
-					buffer.append(MFormat.instance.numberFormatDecimal0.format(cloud.baseFeet));
-				}
+				buffer.append(cloud.toString());
 
 				if (i < clouds.size() - 1)
 					buffer.append(", ");
@@ -321,14 +354,14 @@ public class MMetar
 
 		decodeStationId();
 		decodeObservationTime();
-		decodeAltimeter(items);
-		decodeTemperature(items);
+		decodeAltimeter();
+		decodeTemperature();
 		decodeNoSignal();
 		decodeAuto();
 		decodeCorrection();
 		decodeVisibility(items);
 		decodeWind(items);
-		decodeClouds(items);
+		decodeClouds();
 		decodeWeather(items);
 		decodeRunwayVisualRange();
 		decodeRunwayConditions();
@@ -338,11 +371,21 @@ public class MMetar
 		// 2. Decode after RMK
 		decodeRemarks();
 
-		// 3. Update rawTextHighlight and highlight groups of slashes
+		// 3. Sort items by begin
+		Collections.sort(this.items, new Comparator<MItem>()
+		{
+			@Override
+			public int compare(MItem o1, MItem o2)
+			{
+				return Integer.compare(o1.begin, o2.begin);
+			}
+		});
+
+		// 4. Update rawTextHighlight and highlight groups of slashes
 		updateRawTextHighLight();
 		decodeSlash();
 
-		// 4. Check if metar is not totally decoded
+		// 5. Check if metar is not totally decoded
 		notDecoded();
 	}
 
@@ -354,11 +397,13 @@ public class MMetar
 		if (matcher.find())
 		{
 			String rawMatch = matcher.group(0);
+			int begin = matcher.start(0);
+			int end = matcher.end(0);
 
 			stationId = rawMatch;
 
 			highLightBeforeRMK(rawMatch);
-			items.add(new MItem(rawMatch, "station id=" + stationId));
+			items.add(new MItem(rawMatch, "station id=" + stationId, begin, end));
 		}
 	}
 
@@ -370,6 +415,8 @@ public class MMetar
 		if (matcher.find())
 		{
 			String rawMatch = matcher.group(0);
+			int begin = matcher.start(0);
+			int end = matcher.end(0);
 
 			String rawDay = matcher.group(1);
 			String rawHour = matcher.group(2);
@@ -386,7 +433,7 @@ public class MMetar
 			}
 
 			highLightBeforeRMK(rawMatch);
-			items.add(new MItem(rawMatch, "observation time=" + observationTime.toString()));
+			items.add(new MItem(rawMatch, "observation time=" + observationTime.toString(), begin, end));
 		}
 	}
 
@@ -412,14 +459,16 @@ public class MMetar
 	{
 		Matcher matcher = PATTERN_COLOR.matcher(rawTextBeforeRMKHighlight);
 		StringBuffer buffer = new StringBuffer();
-		if (matcher.find())
+		while (matcher.find())
 		{
 			String rawMatch = matcher.group(0);
+			int begin = matcher.start(0);
+			int end = matcher.end(0);
 
-			color = MMetarDefinitions.instance.colorRemarks.get(rawMatch);
+			color += MMetarDefinitions.instance.colorRemarks.get(rawMatch) + ", ";
 
 			matcher.appendReplacement(buffer, "<b>" + rawMatch + "</b>");
-			items.add(new MItem(rawMatch, "color=" + color));
+			items.add(new MItem(rawMatch, "color=" + color, begin, end));
 		}
 		matcher.appendTail(buffer);
 
@@ -428,34 +477,49 @@ public class MMetar
 
 	private void decodeNoSignal()
 	{
-		noSignal = rawTextBeforeRMK.contains("NOSIG");
-		if (noSignal)
-			highLightBeforeRMK("NOSIG");
-		else
+		String rawNoSignal = "NOSIG";
+		int begin = rawTextBeforeRMK.indexOf(rawNoSignal);
+		noSignal = begin >= 0;
+		if (!noSignal)
 		{
-			noSignal = rawTextBeforeRMK.contains("RTD");
-			if (noSignal)
-				highLightBeforeRMK("RTD");
+			rawNoSignal = "RTD";
+			begin = rawTextBeforeRMK.indexOf(rawNoSignal);
+			noSignal = begin >= 0;
+		}
+		if (noSignal)
+		{
+			highLightBeforeRMK(rawNoSignal);
+			items.add(new MItem(rawNoSignal, "No signal", begin, begin + rawNoSignal.length()));
 		}
 	}
 
 	private void decodeAuto()
 	{
-		auto = rawTextBeforeRMK.contains("AUTO");
+		String rawAuto = "AUTO";
+		int begin = rawTextBeforeRMK.indexOf(rawAuto);
+		auto = begin >= 0;
 		if (auto)
-			highLightBeforeRMK("AUTO");
+		{
+			items.add(new MItem(rawAuto, "Automated station", begin, begin + rawAuto.length()));
+			highLightBeforeRMK(rawAuto);
+		}
 	}
 
 	private void decodeCorrection()
 	{
-		correction = rawTextBeforeRMK.contains("COR");
-		if (correction)
-			highLightBeforeRMK("COR");
-		else
+		String rawCorrection = "COR";
+		int begin = rawTextBeforeRMK.indexOf(rawCorrection);
+		correction = begin >= 0;
+		if (!correction)
 		{
-			correction = rawTextBeforeRMK.contains("CCA");
-			if (correction)
-				highLightBeforeRMK("CCA");
+			rawCorrection = "CCA";
+			begin = rawTextBeforeRMK.indexOf(rawCorrection);
+			correction = begin >= 0;
+		}
+		if (correction)
+		{
+			items.add(new MItem(rawCorrection, "Correction", begin, begin + rawCorrection.length()));
+			highLightBeforeRMK(rawCorrection);
 		}
 	}
 
@@ -594,92 +658,104 @@ public class MMetar
 		}
 	}
 
-	private static final Pattern PATTERN_TEMPERATURE = Pattern.compile("(M?\\d{2})/(M?\\d{0,2})$");
+	private static final Pattern PATTERN_TEMPERATURE = Pattern.compile("\\b(M?\\d{2})/(M?\\d{0,2})");
 
-	private void decodeTemperature(String[] _items)
+	private void decodeTemperature()
 	{
-		for (int i = 2; i < _items.length; i++)
+		Matcher matcher = PATTERN_TEMPERATURE.matcher(rawTextBeforeRMK);
+		if (matcher.find())
 		{
-			if (_items[i].equals("RMK"))
-				return;
+			String rawMatch = matcher.group(0);
+			int begin = matcher.start(0);
+			int end = matcher.end(0);
 
-			Matcher matcher = PATTERN_TEMPERATURE.matcher(_items[i]);
-			if (matcher.find())
-			{
-				String rawTemperature = matcher.group(1);
-				if (rawTemperature.startsWith("M"))
-					temperatureC = -Integer.parseInt(rawTemperature.substring(1));
-				else
-					temperatureC = Integer.parseInt(rawTemperature);
+			String rawTemperature = matcher.group(1);
+			if (rawTemperature.startsWith("M"))
+				temperatureC = -Integer.parseInt(rawTemperature.substring(1));
+			else
+				temperatureC = Integer.parseInt(rawTemperature);
 
-				String rawDewPoint = matcher.group(2);
-				if (!rawDewPoint.isEmpty())
-					try
-					{
-						if (rawDewPoint.startsWith("M"))
-							dewPointC = -Integer.parseInt(rawDewPoint.substring(1));
-						else
-							dewPointC = Integer.parseInt(rawDewPoint);
-					}
-					catch (Exception e)
-					{
-					}
+			String rawDewPoint = matcher.group(2);
+			if (!rawDewPoint.isEmpty())
+				try
+				{
+					if (rawDewPoint.startsWith("M"))
+						dewPointC = -Integer.parseInt(rawDewPoint.substring(1));
+					else
+						dewPointC = Integer.parseInt(rawDewPoint);
+				}
+				catch (Exception e)
+				{
+				}
 
-				highLightBeforeRMK(_items[i]);
-				return;
-			}
+			highLightBeforeRMK(rawMatch);
+			StringBuffer buffer = new StringBuffer();
+			buffer.append("temperature=" + temperatureC + "°C");
+			if (dewPointC != Integer.MIN_VALUE)
+				buffer.append(", dew point=" + dewPointC + "°C");
+			items.add(new MItem(rawMatch, buffer.toString(), begin, end));
 		}
 	}
 
-	private static final Pattern PATTERN_ALTIMETER = Pattern.compile("(A|Q)(\\d{4})");
+	private static final Pattern PATTERN_ALTIMETER = Pattern.compile("\\b(A|Q)(\\d{4})");
 
-	private void decodeAltimeter(String[] _items)
+	private void decodeAltimeter()
 	{
-		for (int i = 2; i < _items.length; i++)
+		Matcher matcher = PATTERN_ALTIMETER.matcher(rawTextBeforeRMK);
+		if (matcher.find())
 		{
-			if (_items[i].equals("RMK"))
-				return;
+			String rawMatch = matcher.group(0);
+			int begin = matcher.start(0);
+			int end = matcher.end(0);
 
-			Matcher matcher = PATTERN_ALTIMETER.matcher(_items[i]);
-			if (matcher.find())
+			String rawAltimeterUnit = matcher.group(1);
+			String rawAltimeter = matcher.group(2);
+
+			StringBuffer buffer = new StringBuffer();
+
+			if (rawAltimeterUnit.equals("Q"))
 			{
-				String rawAltimeterUnit = matcher.group(1);
-				String rawAltimeter = matcher.group(2);
-
-				if (rawAltimeterUnit.equals("Q"))
-					seaLevelPressureHpa = Integer.parseInt(rawAltimeter);
-				else // A
-					altimeterInHg = Integer.parseInt(rawAltimeter) / 100.0;
-				highLightBeforeRMK(_items[i]);
+				seaLevelPressureHpa = Integer.parseInt(rawAltimeter);
+				buffer.append("sea level pressure=" + seaLevelPressureHpa + " hPa");
 			}
+			else // A
+			{
+				altimeterInHg = Integer.parseInt(rawAltimeter) / 100.0;
+				buffer.append("altimeter=" + altimeterInHg + " inHg");
+			}
+
+			highLightBeforeRMK(rawMatch);
+			items.add(new MItem(rawMatch, buffer.toString(), begin, end));
 		}
 	}
 
 	private static final Pattern PATTERN_CLOUDS = Pattern
-			.compile("(CAVOK|CLR|SKC|NSC|NSW|NCD|FEW|SCT|BKN|OVC|VV)(\\d{2,3})?(CB|TCU)?");
+			.compile("\\b(CAVOK|CLR|SKC|NSC|NSW|NCD|FEW|SCT|BKN|OVC|VV)(\\d{2,3})?(CB|TCU)?");
 
-	private void decodeClouds(String[] _items)
+	private void decodeClouds()
 	{
-		for (int i = 2; i < _items.length; i++)
+		Matcher matcher = PATTERN_CLOUDS.matcher(rawTextBeforeRMK);
+		while (matcher.find())
 		{
-			if (_items[i].equals("RMK"))
-				return;
+			String rawMatch = matcher.group(0);
+			int pos = matcher.start(0);
 
-			Matcher matcher = PATTERN_CLOUDS.matcher(_items[i]);
-			if (matcher.find())
-			{
-				String cloudType = matcher.group(1);
-				String altitude = matcher.group(2);
-				String type = matcher.group(3);
+			String cloudType = matcher.group(1);
+			String altitude = matcher.group(2);
+			String type = matcher.group(3);
 
-				MCloud cloud = new MCloud();
-				cloud.cover = MMetarDefinitions.instance.weathers.get(cloudType);
-				if (type != null)
-					cloud.cover += " " + type;
-				cloud.baseFeet = altitude == null ? -1 : Integer.parseInt(altitude) * 100;
+			MCloud cloud = new MCloud();
+			cloud.cover = MMetarDefinitions.instance.weathers.get(cloudType);
+			if (type != null)
+				cloud.cover += " " + type;
+			cloud.baseFeet = altitude == null ? -1 : Integer.parseInt(altitude) * 100;
+
+			if (posTempoBeforeRMK >= 0 && pos > posTempoBeforeRMK)
+				temporary += cloud.toString() + ", ";
+			else
 				clouds.add(cloud);
-				highLightBeforeRMK(_items[i]);
-			}
+
+			highLightBeforeRMK(rawMatch);
 		}
 
 		Collections.sort(clouds, new Comparator<MCloud>()
@@ -693,49 +769,50 @@ public class MMetar
 	}
 
 	private static final Pattern PATTERN_WEATHER = Pattern.compile(
-			"(-|\\+|RE|VC)?(BC|BL|DR|FZ|MI|SH|TS)?(VCSH|RA|DZ|SN|SG|IC|PL|GR|GS|FG|BR|HZ|FU|VA|DU|SA|SQ|FC|SS|DS|TS)$");
+			"\\s(-|\\+|RE|VC)?(BC|BL|DR|FZ|MI|SH|TS)?(VCSH|RA|DZ|SN|SG|IC|PL|GR|GS|FG|BR|HZ|FU|VA|DU|SA|SQ|FC|SS|DS|TS)");
 
 	private void decodeWeather(String[] _items)
 	{
 		weather = "";
 
-		for (int i = 2; i < _items.length; i++)
+		Matcher matcher = PATTERN_WEATHER.matcher(rawTextBeforeRMK);
+		while (matcher.find())
 		{
-			if (_items[i].equals("RMK"))
-				return;
+			String rawMatch = matcher.group(0);
+			int pos = matcher.start(0);
 
-			Matcher matcher = PATTERN_WEATHER.matcher(_items[i]);
-			if (matcher.find())
-			{
-				String rawIntensity = matcher.group(1);
-				if (rawIntensity == null)
-					rawIntensity = "";
-				String intensity = MMetarDefinitions.instance.weathers.get(rawIntensity);
-				if (intensity == null)
-					intensity = "Moderate";
-				if (!intensity.isEmpty())
-					intensity += " ";
+			String rawIntensity = matcher.group(1);
+			if (rawIntensity == null)
+				rawIntensity = "";
+			String intensity = MMetarDefinitions.instance.weathers.get(rawIntensity);
+			if (intensity == null)
+				intensity = "Moderate";
+			if (!intensity.isEmpty())
+				intensity += " ";
 
-				String rawDescriptor = matcher.group(2);
-				if (rawDescriptor == null)
-					rawDescriptor = "";
-				String descriptor = MMetarDefinitions.instance.weathers.get(rawDescriptor);
-				if (descriptor == null)
-					descriptor = "";
-				if (!descriptor.isEmpty())
-					descriptor += " ";
+			String rawDescriptor = matcher.group(2);
+			if (rawDescriptor == null)
+				rawDescriptor = "";
+			String descriptor = MMetarDefinitions.instance.weathers.get(rawDescriptor);
+			if (descriptor == null)
+				descriptor = "";
+			if (!descriptor.isEmpty())
+				descriptor += " ";
 
-				String rawPhenomenon = matcher.group(3);
-				if (rawPhenomenon == null)
-					rawPhenomenon = "";
-				String phenomenon = MMetarDefinitions.instance.weathers.get(rawPhenomenon);
+			String rawPhenomenon = matcher.group(3);
+			if (rawPhenomenon == null)
+				rawPhenomenon = "";
+			String phenomenon = MMetarDefinitions.instance.weathers.get(rawPhenomenon);
 
-				if (rawPhenomenon.equals("VCSH"))
-					intensity = "";
+			if (rawPhenomenon.equals("VCSH"))
+				intensity = "";
 
+			if (posTempoBeforeRMK >= 0 && pos > posTempoBeforeRMK)
+				temporary += intensity + descriptor + phenomenon + ", ";
+			else
 				weather += intensity + descriptor + phenomenon + ", ";
-				highLightBeforeRMK(_items[i]);
-			}
+
+			highLightBeforeRMK(rawMatch);
 		}
 
 		if (!weather.isEmpty())
@@ -1447,5 +1524,6 @@ public class MMetar
 				"K7W4 281255Z AUTO 25003KT 10SM SCT060 08/M04 A2989 RMK AO1 T00751044");
 		metar.decode();
 		System.out.println(metar.debug());
+		System.out.println(metar.highlight(metar.rawTextBeforeRMK));
 	}
 }

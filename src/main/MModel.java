@@ -36,6 +36,7 @@ public class MModel extends AbstractTableModel
 	public boolean filterShowOnlyAirportsWithMetar;
 	public boolean filterNotDecodedMetars;
 	public MCountry filterCountry;
+	public String filterMetar;
 
 	private int totalMetars;
 	private int totalMetarNotDecoded;
@@ -468,7 +469,16 @@ public class MModel extends AbstractTableModel
 				return _airport.metar == null ? null : _airport.metar.color;
 			}
 		}));
-		
+
+		columns.put(col++, new MColumn("Temporary", false, SwingConstants.LEFT, null, new MColumnValue()
+		{
+			@Override
+			public Object get(MAirport _airport)
+			{
+				return _airport.metar == null ? null : _airport.metar.temporary;
+			}
+		}));
+
 		columns.put(col++, new MColumn("Auto", false, SwingConstants.CENTER, null, new MColumnValue()
 		{
 			@Override
@@ -601,6 +611,8 @@ public class MModel extends AbstractTableModel
 		visibleAirports = airports.stream().filter(airport -> !filterShowOnlyAirportsWithMetar || airport.metar != null)
 				.filter(airport -> !filterNotDecodedMetars || (airport.metar != null && airport.metar.notDecoded))
 				.filter(airport -> filterCountry == null || airport.country.equals(filterCountry.code))
+				.filter(
+						airport -> filterMetar == null || (airport.metar != null && airport.metar.rawText.contains(filterMetar)))
 				.collect(Collectors.toList());
 	}
 
