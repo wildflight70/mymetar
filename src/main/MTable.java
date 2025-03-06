@@ -161,10 +161,27 @@ public class MTable extends JTable
 			@Override
 			public void actionPerformed(ActionEvent e)
 			{
-				doCopyHighlightMetarToClipboard();
+				int selectedRow = getSelectedRow();
+				MAirport selectedAirport = model.visibleAirports.get(selectedRow);
+				if (selectedAirport.metar != null)
+					new MClipboard().copy(selectedAirport.metar.rawTextHighlight);
 			}
 		});
 		popup.add(menuItemCopyMetarHighlightClipboard);
+
+		JMenuItem menuItemPrintMetar = new JMenuItem("Print METAR to output");
+		menuItemPrintMetar.addActionListener(new ActionListener()
+		{
+			@Override
+			public void actionPerformed(ActionEvent e)
+			{
+				int selectedRow = getSelectedRow();
+				MAirport selectedAirport = model.visibleAirports.get(selectedRow);
+				if (selectedAirport.metar != null)
+					System.out.println(selectedAirport.metar.debug());
+			}
+		});
+		popup.add(menuItemPrintMetar);
 
 		addMouseListener(new MouseAdapter()
 		{
@@ -309,20 +326,7 @@ public class MTable extends JTable
 
 		MAirport selectedAirport = model.visibleAirports.get(selectedRow);
 		if (selectedAirport.metar != null)
-		{
 			new MClipboard().copy(selectedAirport.metar.rawText);
-		}
-	}
-
-	private void doCopyHighlightMetarToClipboard()
-	{
-		int selectedRow = getSelectedRow();
-
-		MAirport selectedAirport = model.visibleAirports.get(selectedRow);
-		if (selectedAirport.metar != null)
-		{
-			new MClipboard().copy(selectedAirport.metar.rawTextHighlight);
-		}
 	}
 
 	public void updateVisible(boolean _showOnlyAirportsWithMetar, boolean _notDecodedMetars, MCountry _country,

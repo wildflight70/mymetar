@@ -78,6 +78,8 @@ public class MMetarDefinitions
 		weathers.put("GS", "Small hail");
 		weathers.put("HZ", "Haze");
 		weathers.put("RA", "Rain");
+		weathers.put("RADZ", "Drizzle rain");
+		weathers.put("RASN", "Snow rain");
 		weathers.put("SA", "Sand");
 		weathers.put("SQ", "Squall");
 		weathers.put("IC", "Ice crystals");

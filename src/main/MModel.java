@@ -317,7 +317,7 @@ public class MModel extends AbstractTableModel
 				if (_airport.metar == null || _airport.metar.visibilitySM < 0)
 					return null;
 				else
-					return _airport.metar.visibilityNonDirectionalVaration ? (_airport.metar.visibilitySM + " NDV")
+					return _airport.metar.visibilityNonDirectionalVariation ? (_airport.metar.visibilitySM + " NDV")
 							: _airport.metar.visibilitySM;
 			}
 		}));

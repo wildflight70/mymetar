@@ -181,7 +181,7 @@ public class MBottom extends JPanel
 			case 0:
 				return remark.field;
 			case 1:
-				return remark.remark;
+				return remark.value;
 			default:
 				return null;
 			}

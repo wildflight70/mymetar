@@ -25,7 +25,7 @@ public class MMetar
 	public boolean noSignal;
 	public boolean correction;
 	public double visibilitySM = -1.0;
-	public boolean visibilityNonDirectionalVaration;
+	public boolean visibilityNonDirectionalVariation;
 	public double visibilitySMExtra = -1.0;
 	public String visibilityDirectionExtra = "";
 	public int windDirectionDegree;
@@ -40,6 +40,8 @@ public class MMetar
 	public ArrayList<MRunwayVisualRange> runwayVisualRanges;
 	public ArrayList<MRunwayCondition> runwayConditions;
 	public String temporary = "";
+
+	private ArrayList<MItem> items;
 	public ArrayList<MRemark> remarks;
 
 	public String extraFlightCategory = "";
@@ -57,8 +59,6 @@ public class MMetar
 	private String rawTextAfterRMKHighlight;
 
 	private int posTempoBeforeRMK = -1;
-
-	private ArrayList<MItem> items;
 
 	public class MItem
 	{
@@ -123,21 +123,11 @@ public class MMetar
 		}
 	}
 
-	public class MRemark
+	public class MRemark extends MItem
 	{
-		public String field;
-		public String remark;
-
-		public MRemark(String _field, String _remark)
+		public MRemark(String _field, String _value)
 		{
-			field = _field;
-			remark = _remark;
-		}
-
-		@Override
-		public String toString()
-		{
-			return field + ":" + remark;
+			super(_field, _value, -1, -1);
 		}
 	}
 
@@ -211,6 +201,16 @@ public class MMetar
 		if (rawTextAfterRMK != null)
 			rawTextHighlight += " <b>RMK</b> " + rawTextAfterRMKHighlight;
 		rawTextHighlight += "</html>";
+	}
+
+	public String highlight()
+	{
+		StringBuffer buffer = new StringBuffer("<html>");
+		buffer.append(highlight(rawTextBeforeRMK));
+		if (rawTextAfterRMK != null)
+			buffer.append(" <b>RMK</b> ");
+		buffer.append("</html>");
+		return buffer.toString();
 	}
 
 	public String highlight(String _text)
@@ -351,8 +351,6 @@ public class MMetar
 	public void decode()
 	{
 		// 1. Decode before RMK
-		String[] items = rawTextBeforeRMK.split(" ");
-
 		decodeStationId();
 		decodeObservationTime();
 		decodeAltimeter();
@@ -363,7 +361,7 @@ public class MMetar
 		decodeVisibility();
 		decodeWind();
 		decodeCovers();
-		decodeWeather(items);
+		decodeWeather();
 		decodeRunwayVisualRange();
 		decodeRunwayConditions();
 		decodeAirfieldElevation();
@@ -614,8 +612,8 @@ public class MMetar
 	}
 
 	private static final Pattern PATTERN_VISIBILITY = Pattern
-			.compile("\\b(\\d+\\s*\\d*/\\d+|\\d+)(?<unit>\\sHZSM|SM|KM)\\s|\\b(\\d{4})(NDV)?\\s");
-	private static final Pattern PATTERN_VISIBILITY_EXTRA = Pattern.compile("\\b(\\d{4})(E|S|SE|N|NW|W)\\s");
+			.compile("\\b(\\d+\\s*\\d*/\\d+|\\d+)(?<unit>\\sHZSM|SM|KM)\\s|\\b(\\d{4})(NDV)?\\b");
+	private static final Pattern PATTERN_VISIBILITY_EXTRA = Pattern.compile("\\b(\\d{4})(E|S|SE|N|NW|W)\\b");
 
 	private void decodeVisibility()
 	{
@@ -623,6 +621,9 @@ public class MMetar
 		if (matcher.find())
 		{
 			String rawMatch = matcher.group(0);
+			int begin = matcher.start(0);
+			int end = matcher.end(0);
+
 			String rawVisibility = matcher.group(1);
 			String rawVisibilityUnit = matcher.group("unit");
 			if (rawVisibilityUnit != null)
@@ -632,6 +633,7 @@ public class MMetar
 				if (rawVisibilityUnit.equals("KM"))
 					visibilitySM = Math.round(10.0 * MUnit.metersToSM(visibility * 1000)) / 10.0;
 				highLightBeforeRMK(rawMatch);
+				items.add(new MItem(rawMatch, "Visibility=" + visibilitySM + " SM", begin, end));
 			}
 			else
 			{
@@ -641,8 +643,9 @@ public class MMetar
 				{
 					visibilitySM = Integer.parseInt(rawVisibility);
 					visibilitySM = Math.round(10.0 * MUnit.metersToSM(visibilitySM)) / 10.0;
-					visibilityNonDirectionalVaration = rawVisibilityIndicator != null && rawVisibilityIndicator.equals("NDV");
+					visibilityNonDirectionalVariation = rawVisibilityIndicator != null && rawVisibilityIndicator.equals("NDV");
 					highLightBeforeRMK(rawMatch);
+					items.add(new MItem(rawMatch, "Visibility=" + visibilitySM + " SM non directional variation", begin, end));
 				}
 			}
 		}
@@ -651,6 +654,9 @@ public class MMetar
 		if (matcher.find())
 		{
 			String rawMatch = matcher.group(0);
+			int begin = matcher.start(0);
+			int end = matcher.end(0);
+
 			String rawVisibility = matcher.group(1);
 			String rawVisibilityIndicator = matcher.group(2);
 			if (rawVisibility != null)
@@ -660,11 +666,12 @@ public class MMetar
 				if (rawVisibilityIndicator != null)
 					visibilityDirectionExtra = rawVisibilityIndicator;
 				highLightBeforeRMK(rawMatch);
+				items.add(new MItem(rawMatch, "Visibility=" + visibilitySM + " " + visibilityDirectionExtra, begin, end));
 			}
 		}
 	}
 
-	private static final Pattern PATTERN_TEMPERATURE = Pattern.compile("\\b(M?\\d{2})/(M?\\d{0,2})");
+	private static final Pattern PATTERN_TEMPERATURE = Pattern.compile("\\b(M?\\d{2})/((M|-)?\\d{0,2})");
 
 	private void decodeTemperature()
 	{
@@ -685,7 +692,7 @@ public class MMetar
 			if (!rawDewPoint.isEmpty())
 				try
 				{
-					if (rawDewPoint.startsWith("M"))
+					if (rawDewPoint.startsWith("M") || rawDewPoint.startsWith("-"))
 						dewPointC = -Integer.parseInt(rawDewPoint.substring(1));
 					else
 						dewPointC = Integer.parseInt(rawDewPoint);
@@ -777,9 +784,9 @@ public class MMetar
 	}
 
 	private static final Pattern PATTERN_WEATHER = Pattern.compile(
-			"\\s(-|\\+|RE|VC)?(BC|BL|DR|FZ|MI|SH|TS)?(VCSH|RA|DZ|SN|SG|IC|PL|GR|GS|FG|BR|HZ|FU|VA|DU|SA|SQ|FC|SS|DS|TS)");
+			"(?<=\\s)(-|\\+|RE|VC)?(BC|BL|DR|FZ|MI|SH|TS)?(SN|VCSH|RA|RADZ|RASN|DZ|SG|IC|PL|GR|GS|FG|BR|HZ|FU|VA|DU|SA|SQ|FC|SS|DS|TS)\\b");
 
-	private void decodeWeather(String[] _items)
+	private void decodeWeather()
 	{
 		weather = "";
 
@@ -787,7 +794,8 @@ public class MMetar
 		while (matcher.find())
 		{
 			String rawMatch = matcher.group(0);
-			int pos = matcher.start(0);
+			int begin = matcher.start(0);
+			int end = matcher.end(0);
 
 			String rawIntensity = matcher.group(1);
 			if (rawIntensity == null)
@@ -815,11 +823,13 @@ public class MMetar
 			if (rawPhenomenon.equals("VCSH"))
 				intensity = "";
 
-			if (posTempoBeforeRMK >= 0 && pos > posTempoBeforeRMK)
-				temporary += intensity + descriptor + phenomenon + ", ";
+			String value = intensity + descriptor + phenomenon;
+			if (posTempoBeforeRMK >= 0 && begin > posTempoBeforeRMK)
+				temporary += value + ", ";
 			else
-				weather += intensity + descriptor + phenomenon + ", ";
+				weather += value + ", ";
 
+			items.add(new MItem(rawMatch, value, begin, end));
 			highLightBeforeRMK(rawMatch);
 		}
 
@@ -1511,9 +1521,11 @@ public class MMetar
 
 	public String debug()
 	{
-		StringBuffer buffer = new StringBuffer(rawText);
+		StringBuffer buffer = new StringBuffer("metar:" + rawText);
 		buffer.append("\n");
-		buffer.append(rawTextHighlight);
+		buffer.append("old metar highlight:" + rawTextHighlight);
+		buffer.append("\n");
+		buffer.append("new metar highlight:" + highlight());
 		buffer.append("\n");
 		buffer.append("decoded=" + !notDecoded + "\n");
 		buffer.append("ITEMS\n");
@@ -1529,9 +1541,8 @@ public class MMetar
 	public static void main(String[] args)
 	{
 		MMetar metar = new MMetar((LocalDateTime) null,
-				"K7W4 281255Z AUTO 25003KT 10SM SCT060 08/M04 A2989 RMK AO1 T00751044");
+				"BGKK 281250Z AUTO 05021G36KT 360V080 4600NDV -SN OVC014/// 02/01 Q0953");
 		metar.decode();
 		System.out.println(metar.debug());
-		System.out.println(metar.highlight(metar.rawTextBeforeRMK));
 	}
 }
