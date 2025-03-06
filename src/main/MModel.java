@@ -425,12 +425,12 @@ public class MModel extends AbstractTableModel
 			}
 		}));
 
-		columns.put(col++, new MColumn("Clouds (ft)", false, SwingConstants.LEFT, null, new MColumnValue()
+		columns.put(col++, new MColumn("Cover (ft)", false, SwingConstants.LEFT, null, new MColumnValue()
 		{
 			@Override
 			public Object get(MAirport _airport)
 			{
-				return _airport.metar == null ? null : _airport.metar.cloudsToString();
+				return _airport.metar == null ? null : _airport.metar.coversToString();
 			}
 		}));
 
