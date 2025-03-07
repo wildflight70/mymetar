@@ -101,6 +101,12 @@ public class MMetarDefinitions
 		weathers.put("SCT", "Scattered");
 		weathers.put("SKC", "Clear");
 		weathers.put("VV", "Sky obscured");
+		
+		weathers.put("SNW CVR/TRACE LOOSE", "Snow cover, trace amounts, loosely packed");
+		weathers.put("SNOW COVER HARD PACK", "Snow cover is hard-packed");
+		weathers.put("SNW CVR/MUCH LOOSE", "Snow cover is loose and easily lifted by the wind");
+		weathers.put("SNW COV/MUCH LOOSE", "Snow cover is loose and easily lifted by the wind");
+		weathers.put("SNW CVR/MEDIUM PACK", "Snow cover is medium packed");
 }
 
 	private void initPressureTendencyRemarks()
