@@ -222,13 +222,13 @@ public class MMetar
 		if (raws.length == 2)
 			rawTextAfterRMK = raws[1].trim();
 
-		posTempoBeforeRMK = rawTextBeforeRMK.indexOf("TEMPO");
-
 		covers = new ArrayList<MCover>();
 		runwayVisualRanges = new ArrayList<MRunwayVisualRange>();
 		runwayConditions = new ArrayList<MRunwayCondition>();
 		remarks = new ArrayList<MRemark>();
 		items = new ArrayList<MItem>();
+
+		posTempoBeforeRMK = rawTextBeforeRMK.indexOf("TEMPO");
 	}
 
 	public String highlight()
@@ -244,7 +244,8 @@ public class MMetar
 		}
 
 		buffer.append("</html>");
-		return buffer.toString();
+
+		return buffer.toString().replace("TEMPO", "<b>TEMPO</b>");
 	}
 
 	public String highlight(ArrayList<? extends MItem> _items, String _text)
@@ -327,8 +328,6 @@ public class MMetar
 
 	public void decode()
 	{
-		System.out.println(rawText);
-
 		// 1. Decode before RMK
 		decodeStationId();
 		decodeObservationTime();
@@ -498,7 +497,7 @@ public class MMetar
 			items.add(new MItem(rawMatch, "Correction", begin + 1, begin + 1 + rawMatch.length() - 1));
 	}
 
-	private static final Pattern PATTERN_WIND = Pattern.compile("\\b(VRB|\\d{3})(\\d{2})(G(\\d{2}))?(KT|MPS)");
+	private static final Pattern PATTERN_WIND = Pattern.compile("\\b(VRB|\\d{3})(\\d{2})?(G(\\d{2}))?(KT|MPS)");
 	private static final Pattern PATTERN_WIND_VARIABLE = Pattern.compile("\\b(\\d+)V(\\d+)\\b");
 
 	private void decodeWind()
@@ -521,15 +520,27 @@ public class MMetar
 		}
 
 		matcher = PATTERN_WIND.matcher(rawTextBeforeRMK);
-		if (matcher.find())
+		while (matcher.find())
 		{
 			String rawMatch = matcher.group(0);
 			int begin = matcher.start(0);
 			int end = matcher.end(0);
 
-			StringBuffer buffer = new StringBuffer("Wind ");
-
 			String rawDirection = matcher.group(1);
+			String rawSpeed = matcher.group(2);
+			String rawGust = matcher.group(4);
+			String rawSpeedUnit = matcher.group(5);
+
+			boolean isTempo = posTempoBeforeRMK >= 0 && begin > posTempoBeforeRMK;
+
+			int windDirectionDegree = rawDirection.equals("VRB") ? -1 : Integer.parseInt(rawDirection);
+
+			StringBuffer buffer = new StringBuffer();
+			if (isTempo)
+				buffer.append("Temporary wind ");
+			else
+				buffer.append("Wind ");
+
 			if (rawDirection.equals("VRB"))
 			{
 				windDirectionDegree = -1;
@@ -541,21 +552,29 @@ public class MMetar
 				buffer.append(windDirectionDegree + "° ");
 			}
 
-			String rawSpeedUnit = matcher.group(5);
-
-			String rawSpeed = matcher.group(2);
-			windSpeedKt = Integer.parseInt(rawSpeed);
-			if (rawSpeedUnit.equals("MPS"))
+			int windSpeedKt = rawSpeed == null ? -1 : Integer.parseInt(rawSpeed);
+			if (rawSpeed != null && rawSpeedUnit.equals("MPS"))
 				windSpeedKt = MUnit.mpsToKnots(windSpeedKt);
-			buffer.append("at " + windSpeedKt + " kt");
 
-			String rawGust = matcher.group(4);
+			if (rawSpeed != null)
+				buffer.append("at " + windSpeedKt + " kt");
+
+			int windGustKt = -1;
 			if (rawGust != null)
 			{
 				windGustKt = Integer.parseInt(rawGust);
 				if (rawSpeedUnit.equals("MPS"))
 					windGustKt = MUnit.mpsToKnots(windGustKt);
 				buffer.append(" with gust at " + windGustKt + " kt");
+			}
+
+			if (isTempo)
+				temporary += buffer.toString() + ", ";
+			else
+			{
+				this.windDirectionDegree = windDirectionDegree;
+				this.windSpeedKt = windSpeedKt;
+				this.windGustKt = windGustKt;
 			}
 
 			items.add(new MItem(rawMatch, buffer.toString(), begin, end));
@@ -592,22 +611,32 @@ public class MMetar
 	private void decodeVisibility()
 	{
 		Matcher matcher = PATTERN_VISIBILITY.matcher(rawTextBeforeRMK);
-		if (matcher.find())
+		while (matcher.find())
 		{
 			String rawMatch = matcher.group(0);
 			int begin = matcher.start(0);
 			int end = matcher.end(0);
+
+			boolean isTempo = posTempoBeforeRMK >= 0 && begin > posTempoBeforeRMK;
 
 			String rawVisibility = matcher.group(1);
 			String rawVisibilityUnit = matcher.group("unit");
 			if (rawVisibilityUnit != null)
 			{
 				double visibility = parseFractionalMiles(rawVisibility);
-				visibilitySM = Math.round(10.0 * visibility) / 10.0;
+				double visibilitySM = Math.round(10.0 * visibility) / 10.0;
 				if (rawVisibilityUnit.equals("KM"))
 					visibilitySM = Math.round(10.0 * MUnit.metersToSM(visibility * 1000)) / 10.0;
+				
+				String buffer = isTempo ? "Temporary visibility" : "Visibility";
+				buffer += "=" + visibilitySM + " SM";
 
-				items.add(new MItem(rawMatch, "Visibility=" + visibilitySM + " SM", begin, end));
+				if(isTempo)
+					temporary += buffer + ", ";
+				else
+					this.visibilitySM = visibilitySM;
+
+				items.add(new MItem(rawMatch, buffer, begin, end));
 			}
 			else
 			{
@@ -615,13 +644,25 @@ public class MMetar
 				String rawVisibilityIndicator = matcher.group(4);
 				if (rawVisibility != null)
 				{
-					visibilitySM = Integer.parseInt(rawVisibility);
+					double visibilitySM = Integer.parseInt(rawVisibility);
 					visibilitySM = Math.round(10.0 * MUnit.metersToSM(visibilitySM)) / 10.0;
-					visibilityNonDirectionalVariation = rawVisibilityIndicator != null && rawVisibilityIndicator.equals("NDV");
+					boolean visibilityNonDirectionalVariation = rawVisibilityIndicator != null;
 
-					StringBuffer buffer = new StringBuffer("Visibility=" + visibilitySM + " SM");
+					StringBuffer buffer = new StringBuffer();
+					if (isTempo)
+						buffer.append("Temporary visibility=" + visibilitySM + " SM");
+					else
+						buffer.append("Visibility=" + visibilitySM + " SM");
 					if (visibilityNonDirectionalVariation)
 						buffer.append(" SM non directional variation");
+
+					if (isTempo)
+						temporary += buffer.toString();
+					else
+					{
+						this.visibilitySM = visibilitySM;
+						this.visibilityNonDirectionalVariation = visibilityNonDirectionalVariation;
+					}
 
 					items.add(new MItem(rawMatch, buffer.toString(), begin, end));
 				}
@@ -1124,7 +1165,7 @@ public class MMetar
 	private static final Pattern PATTERN_REMARK_WEATHER = Pattern.compile(
 			"\\b(CIG|CLD(\\sEMBD)?|CVCTV|DP|(SMOKE\\s)?FU\\s(ALQDS|ALL\\sQUADS)|HALO|ICE|LGT\\sICG|PCPN|RAG|VIS|WX)(\\d{3}|\\sMISG)?\\b");
 	private static final Pattern PATTERN_REMARK_WEATHER_2 = Pattern.compile(
-			"\\b(SNW\\sCVR/TRACE\\sLOOSE|SNOW\\sCOVER\\sHARD\\sPACK|SNW\\sCVR/MUCH\\sLOOSE|SNW\\sCOV/MUCH\\sLOOSE|SNW\\sCVR/MEDIUM\\sPACK)");
+			"\\b(AFT\\s(\\d{2})UTC\\s)?(SNW\\sCVR/TRACE\\sLOOSE|SNOW\\sCOVER\\sHARD\\sPACK|SNW\\sCVR/MUCH\\sLOOSE|SNW\\sCOV/MUCH\\sLOOSE|SNW\\sCVR/MEDIUM\\sPACK)");
 
 	private void decodeRemarksWeather()
 	{
@@ -1135,7 +1176,19 @@ public class MMetar
 			int begin = matcher.start(0);
 			int end = matcher.end(0);
 
-			remarks.add(new MRemark(rawMatch, MMetarDefinitions.instance.weathers.get(rawMatch), begin, end));
+			String rawAfterHour = matcher.group(2);
+			String rawWeather = matcher.group(3);
+
+			String weather = MMetarDefinitions.instance.weathers.get(rawWeather);
+
+			StringBuffer buffer = new StringBuffer(weather);
+			if (rawAfterHour != null)
+			{
+				int afterHour = Integer.parseInt(rawAfterHour);
+				buffer.append(" after " + afterHour + ":00Z");
+			}
+
+			remarks.add(new MRemark(rawMatch, buffer.toString(), begin, end));
 		}
 
 		matcher = PATTERN_REMARK_WEATHER.matcher(rawTextAfterRMK);
