@@ -627,11 +627,11 @@ public class MMetar
 				double visibilitySM = Math.round(10.0 * visibility) / 10.0;
 				if (rawVisibilityUnit.equals("KM"))
 					visibilitySM = Math.round(10.0 * MUnit.metersToSM(visibility * 1000)) / 10.0;
-				
+
 				String buffer = isTempo ? "Temporary visibility" : "Visibility";
 				buffer += "=" + visibilitySM + " SM";
 
-				if(isTempo)
+				if (isTempo)
 					temporary += buffer + ", ";
 				else
 					this.visibilitySM = visibilitySM;
@@ -759,7 +759,7 @@ public class MMetar
 	}
 
 	private static final Pattern PATTERN_COVERS = Pattern
-			.compile("\\b(CAVOK|CLR|SKC|NSC|NSW|NCD|FEW|SCT|BKN|OVC|VV)(\\d{2,3})?(CB|TCU)?\\b");
+			.compile("\\b(CAVOK|CLR|SKC|NSC|NSW|NCD|FEW|SCT|BKN|OVC|VV)(\\d{2,3})?(///)?(CB|TCU)?\\s");
 
 	private void decodeCovers()
 	{
@@ -772,12 +772,15 @@ public class MMetar
 
 			String rawCoverType = matcher.group(1);
 			String rawAltitude = matcher.group(2);
-			String rawType = matcher.group(3);
+			String rawType = matcher.group(4);
 
 			MCover cover = new MCover();
 			cover.type = MMetarDefinitions.instance.weathers.get(rawCoverType);
 			if (rawType != null)
-				cover.type += " " + rawType;
+			{
+				String type = MMetarDefinitions.instance.cloudRemarks.get(rawType);
+				cover.type += " " + type;
+			}
 			cover.baseFeet = rawAltitude == null ? -1 : Integer.parseInt(rawAltitude) * 100;
 
 			if (posTempoBeforeRMK >= 0 && begin > posTempoBeforeRMK)
