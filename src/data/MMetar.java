@@ -328,6 +328,8 @@ public class MMetar
 
 	public void decode()
 	{
+		System.out.println(rawText);
+
 		// 1. Decode before RMK
 		decodeStationId();
 		decodeObservationTime();
@@ -519,10 +521,15 @@ public class MMetar
 			items.add(new MItem(rawMatch, "Wind variable from " + windFromDegree + "° to " + windToDegree + "°", begin, end));
 		}
 
+		String rawMatch = "/////KT";
+		int p = rawTextBeforeRMK.indexOf(rawMatch);
+		if (p >= 0)
+			items.add(new MItem(rawMatch, "Wind undefined", p, p + rawMatch.length()));
+
 		matcher = PATTERN_WIND.matcher(rawTextBeforeRMK);
 		while (matcher.find())
 		{
-			String rawMatch = matcher.group(0);
+			rawMatch = matcher.group(0);
 			int begin = matcher.start(0);
 			int end = matcher.end(0);
 
@@ -533,7 +540,8 @@ public class MMetar
 
 			boolean isTempo = posTempoBeforeRMK >= 0 && begin > posTempoBeforeRMK;
 
-			int windDirectionDegree = rawDirection.equals("VRB") ? -1 : Integer.parseInt(rawDirection);
+			int windDirectionDegree = (rawDirection.equals("VRB") || rawDirection.equals("/////")) ? -1
+					: Integer.parseInt(rawDirection);
 
 			StringBuffer buffer = new StringBuffer();
 			if (isTempo)
@@ -546,7 +554,7 @@ public class MMetar
 				windDirectionDegree = -1;
 				buffer.append("variable ");
 			}
-			else
+			else if (!rawDirection.equals("/////"))
 			{
 				windDirectionDegree = Integer.parseInt(rawDirection);
 				buffer.append(windDirectionDegree + "° ");
@@ -759,7 +767,7 @@ public class MMetar
 	}
 
 	private static final Pattern PATTERN_COVERS = Pattern
-			.compile("\\b(CAVOK|CLR|SKC|NSC|NSW|NCD|FEW|SCT|BKN|OVC|VV)(\\d{2,3})?(///)?(CB|TCU)?\\s");
+			.compile("\\b(CAVOK|CLR|SKC|NSC|NSW|NCD|FEW|SCT|BKN|OVC|VV)(\\d{2,3})?(CB|TCU)?\\b");
 
 	private void decodeCovers()
 	{
@@ -772,7 +780,19 @@ public class MMetar
 
 			String rawCoverType = matcher.group(1);
 			String rawAltitude = matcher.group(2);
-			String rawType = matcher.group(4);
+			String rawType = matcher.group(3);
+
+			if (end < rawTextBeforeRMK.length() && rawTextBeforeRMK.substring(end, end + 3).equals("///"))
+			{
+				end += 3;
+				int pos = end;
+				while (end < rawTextBeforeRMK.length() && rawTextBeforeRMK.charAt(end) != ' ')
+					end++;
+				rawMatch = rawTextBeforeRMK.substring(begin, end);
+				rawType = rawTextBeforeRMK.substring(pos, end);
+				if (rawType.isEmpty())
+					rawType = null;
+			}
 
 			MCover cover = new MCover();
 			cover.type = MMetarDefinitions.instance.weathers.get(rawCoverType);
@@ -783,12 +803,19 @@ public class MMetar
 			}
 			cover.baseFeet = rawAltitude == null ? -1 : Integer.parseInt(rawAltitude) * 100;
 
+			StringBuffer buffer = new StringBuffer();
 			if (posTempoBeforeRMK >= 0 && begin > posTempoBeforeRMK)
+			{
 				temporary += cover.toString() + ", ";
+				buffer.append("Temporary " + cover.toString());
+			}
 			else
+			{
 				covers.add(cover);
+				buffer.append(cover.toString());
+			}
 
-			items.add(new MItem(rawMatch, cover.toString(), begin, end));
+			items.add(new MItem(rawMatch, buffer.toString(), begin, end));
 		}
 
 		Collections.sort(covers, new Comparator<MCover>()
@@ -1541,11 +1568,19 @@ public class MMetar
 		}
 	}
 
-	private void decodeRemarksMaintenance()
+	private void decodeRemarksOther()
 	{
-		int begin = rawTextAfterRMK.indexOf("$");
+		// Maintenance
+		String rawMatch = "$";
+		int begin = rawTextAfterRMK.indexOf(rawMatch);
 		if (begin >= 0 && begin == rawTextAfterRMK.length() - 1)
-			remarks.add(new MRemark("$", "Maintenance needed at the station", begin, begin + 1));
+			remarks.add(new MRemark(rawMatch, "Maintenance needed at the station", begin, begin + rawMatch.length()));
+
+		// First observation
+		rawMatch = "FIRST";
+		begin = rawTextAfterRMK.indexOf(rawMatch);
+		if (begin >= 0)
+			remarks.add(new MRemark(rawMatch, "First observation of the day", begin, begin + rawMatch.length()));
 	}
 
 	private void decodeRemarks()
@@ -1570,7 +1605,7 @@ public class MMetar
 			decodeRemarksWind();
 			decodeRemarksSnowAccumulation();
 			decodeRemarksPrecipitations();
-			decodeRemarksMaintenance();
+			decodeRemarksOther();
 		}
 	}
 
