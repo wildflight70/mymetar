@@ -13,23 +13,26 @@ import util.MUnit;
 
 public class MMetar
 {
+	public static final int INTEGER_NO_VALUE = Integer.MIN_VALUE;
+	public static final double DOUBLE_NO_VALUE = -1.0;
+
 	public String rawText;
 	public String stationId;
 	public LocalDateTime observationTime;
-	public double seaLevelPressureHpa = -1;
-	public double altimeterInHg = -1;
+	public double seaLevelPressureHpa = INTEGER_NO_VALUE;
+	public double altimeterInHg = INTEGER_NO_VALUE;
 	public int temperatureC;
-	public int dewPointC = Integer.MIN_VALUE;
+	public int dewPointC = INTEGER_NO_VALUE;
 	public boolean auto;
 	public boolean noSignal;
 	public boolean correction;
-	public double visibilitySM = -1.0;
+	public double visibilitySM = DOUBLE_NO_VALUE;
 	public boolean visibilityNonDirectionalVariation;
-	public double visibilitySMExtra = -1.0;
+	public double visibilitySMExtra = DOUBLE_NO_VALUE;
 	public String visibilityDirectionExtra = "";
-	public int windDirectionDegree;
-	public int windSpeedKt = -1;
-	public int windGustKt;
+	public int windDirectionDegree = INTEGER_NO_VALUE;
+	public int windSpeedKt = INTEGER_NO_VALUE;
+	public int windGustKt = INTEGER_NO_VALUE;
 	public boolean windVariable;
 	public int windFromDegree;
 	public int windToDegree;
@@ -54,8 +57,6 @@ public class MMetar
 
 	private String rawTextBeforeRMK;
 	private String rawTextAfterRMK;
-//	private String rawTextBeforeRMKHighlight;
-//	private String rawTextAfterRMKHighlight;
 
 	private int posTempoBeforeRMK = -1;
 
@@ -86,9 +87,9 @@ public class MMetar
 	{
 		public String runway;
 		public String minMoreLess; // null, <, >
-		public int minVisibility = -1;
+		public int minVisibility = Integer.MIN_VALUE;
 		public String maxMoreLess; // null, <, >
-		public int maxVisibility = -1;
+		public int maxVisibility = Integer.MIN_VALUE;
 		public String trend; // null, (U)p, (D)own, (N)o change
 
 		public MRunwayVisualRange(String _runway, String _minMoreLess, int _minVisibility, String _maxMoreLess,
@@ -108,7 +109,7 @@ public class MMetar
 			StringBuffer buffer = new StringBuffer(runway);
 			buffer.append("=");
 
-			if (minVisibility < 0 && maxVisibility < 0)
+			if (minVisibility == Integer.MIN_VALUE && maxVisibility == Integer.MIN_VALUE)
 				buffer.append("missing");
 			else
 			{
@@ -117,7 +118,7 @@ public class MMetar
 
 				buffer.append(MFormat.instance.numberFormatDecimal0.format(minVisibility) + "m");
 
-				if (maxVisibility >= 0)
+				if (maxVisibility != Integer.MIN_VALUE)
 				{
 					buffer.append(" to ");
 					if (maxMoreLess != null)
@@ -177,13 +178,13 @@ public class MMetar
 	public class MCover
 	{
 		public String type;
-		public int baseFeet = -1;
+		public int baseFeet = Integer.MIN_VALUE;
 
 		@Override
 		public String toString()
 		{
 			StringBuffer buffer = new StringBuffer(type);
-			if (baseFeet >= 0)
+			if (baseFeet != Integer.MIN_VALUE)
 			{
 				buffer.append(" at ");
 				buffer.append(MFormat.instance.numberFormatDecimal0.format(baseFeet));
@@ -231,7 +232,7 @@ public class MMetar
 		posTempoBeforeRMK = rawTextBeforeRMK.indexOf("TEMPO");
 	}
 
-	public String highlight()
+	private String highlight()
 	{
 		StringBuffer buffer = new StringBuffer("<html>");
 
@@ -248,7 +249,7 @@ public class MMetar
 		return buffer.toString().replace("TEMPO", "<b>TEMPO</b>");
 	}
 
-	public String highlight(ArrayList<? extends MItem> _items, String _text)
+	private String highlight(ArrayList<? extends MItem> _items, String _text)
 	{
 		StringBuffer buffer = new StringBuffer();
 		int posText = 0;
@@ -538,10 +539,13 @@ public class MMetar
 			String rawGust = matcher.group(4);
 			String rawSpeedUnit = matcher.group(5);
 
-			boolean isTempo = posTempoBeforeRMK >= 0 && begin > posTempoBeforeRMK;
+			boolean isTempo = isTempoBeforeRMK(begin);
 
-			int windDirectionDegree = (rawDirection.equals("VRB") || rawDirection.equals("/////")) ? -1
-					: Integer.parseInt(rawDirection);
+			int windDirectionDegree = MMetar.INTEGER_NO_VALUE;
+			if (rawDirection.equals("VRB"))
+				windDirectionDegree = -1;
+			else
+				windDirectionDegree = Integer.parseInt(rawDirection);
 
 			StringBuffer buffer = new StringBuffer();
 			if (isTempo)
@@ -550,24 +554,21 @@ public class MMetar
 				buffer.append("Wind ");
 
 			if (rawDirection.equals("VRB"))
-			{
-				windDirectionDegree = -1;
 				buffer.append("variable ");
-			}
 			else if (!rawDirection.equals("/////"))
 			{
 				windDirectionDegree = Integer.parseInt(rawDirection);
 				buffer.append(windDirectionDegree + "° ");
 			}
 
-			int windSpeedKt = rawSpeed == null ? -1 : Integer.parseInt(rawSpeed);
+			int windSpeedKt = rawSpeed == null ? MMetar.INTEGER_NO_VALUE : Integer.parseInt(rawSpeed);
 			if (rawSpeed != null && rawSpeedUnit.equals("MPS"))
 				windSpeedKt = MUnit.mpsToKnots(windSpeedKt);
 
 			if (rawSpeed != null)
 				buffer.append("at " + windSpeedKt + " kt");
 
-			int windGustKt = -1;
+			int windGustKt = MMetar.INTEGER_NO_VALUE;
 			if (rawGust != null)
 			{
 				windGustKt = Integer.parseInt(rawGust);
@@ -625,7 +626,7 @@ public class MMetar
 			int begin = matcher.start(0);
 			int end = matcher.end(0);
 
-			boolean isTempo = posTempoBeforeRMK >= 0 && begin > posTempoBeforeRMK;
+			boolean isTempo = isTempoBeforeRMK(begin);
 
 			String rawVisibility = matcher.group(1);
 			String rawVisibilityUnit = matcher.group("unit");
@@ -637,10 +638,10 @@ public class MMetar
 					visibilitySM = Math.round(10.0 * MUnit.metersToSM(visibility * 1000)) / 10.0;
 
 				String buffer = isTempo ? "Temporary visibility" : "Visibility";
-				buffer += "=" + visibilitySM + " SM";
+				buffer += "=" + visibilitySM + " SM, ";
 
 				if (isTempo)
-					temporary += buffer + ", ";
+					temporary += buffer;
 				else
 					this.visibilitySM = visibilitySM;
 
@@ -658,7 +659,7 @@ public class MMetar
 
 					StringBuffer buffer = new StringBuffer();
 					if (isTempo)
-						buffer.append("Temporary visibility=" + visibilitySM + " SM");
+						buffer.append("Temporary visibility=" + visibilitySM + " SM, ");
 					else
 						buffer.append("Visibility=" + visibilitySM + " SM");
 					if (visibilityNonDirectionalVariation)
@@ -767,10 +768,27 @@ public class MMetar
 	}
 
 	private static final Pattern PATTERN_COVERS = Pattern
-			.compile("\\b(CAVOK|CLR|SKC|NSC|NSW|NCD|FEW|SCT|BKN|OVC|VV)(\\d{2,3})?(CB|TCU)?\\b");
+			.compile("\\b(CAVOK|CLR|SKC|NSC|NSW|NCD|FEW|SCT|BKN|OVC|VV)(\\d{2,3})?(CB|SC|TCU)?\\b");
 
+	private void decodeCovers(String _pattern)
+	{
+		String rawMatch = _pattern;
+		int begin = rawTextBeforeRMK.indexOf(rawMatch);
+		if (begin >= 0)
+		{
+			rawMatch = rawMatch.trim();
+			begin++;
+			int end = begin + rawMatch.length();
+			String type = MMetarDefinitions.instance.cloudRemarks.get(rawMatch.substring(3));
+			items.add(new MItem(rawMatch, type, begin, end));
+		}
+	}
+	
 	private void decodeCovers()
 	{
+		decodeCovers(" ///TCU ");
+		decodeCovers(" ///CB ");
+
 		Matcher matcher = PATTERN_COVERS.matcher(rawTextBeforeRMK);
 		while (matcher.find())
 		{
@@ -801,10 +819,10 @@ public class MMetar
 				String type = MMetarDefinitions.instance.cloudRemarks.get(rawType);
 				cover.type += " " + type;
 			}
-			cover.baseFeet = rawAltitude == null ? -1 : Integer.parseInt(rawAltitude) * 100;
+			cover.baseFeet = rawAltitude == null ? MMetar.INTEGER_NO_VALUE : Integer.parseInt(rawAltitude) * 100;
 
 			StringBuffer buffer = new StringBuffer();
-			if (posTempoBeforeRMK >= 0 && begin > posTempoBeforeRMK)
+			if (isTempoBeforeRMK(begin))
 			{
 				temporary += cover.toString() + ", ";
 				buffer.append("Temporary " + cover.toString());
@@ -869,7 +887,7 @@ public class MMetar
 				intensity = "";
 
 			String value = intensity + descriptor + phenomenon;
-			if (posTempoBeforeRMK >= 0 && begin > posTempoBeforeRMK)
+			if (isTempoBeforeRMK(begin))
 				temporary += value + ", ";
 			else
 				weather += value + ", ";
@@ -1623,6 +1641,11 @@ public class MMetar
 				break;
 			}
 		}
+	}
+
+	private boolean isTempoBeforeRMK(int _begin)
+	{
+		return posTempoBeforeRMK >= 0 && _begin > posTempoBeforeRMK;
 	}
 
 	public String debug()

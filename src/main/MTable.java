@@ -332,11 +332,8 @@ public class MTable extends JTable
 	public void updateVisible(boolean _showOnlyAirportsWithMetar, boolean _notDecodedMetars, MCountry _country,
 			String _metar)
 	{
-		model.filterShowOnlyAirportsWithMetar = _showOnlyAirportsWithMetar;
-		model.filterNotDecodedMetars = _notDecodedMetars;
-		model.filterCountry = _country.code.isEmpty() ? null : _country;
-		model.filterMetar = _metar.isEmpty() ? null : _metar;
-		model.updateVisible();
+		model.updateVisible(_showOnlyAirportsWithMetar, _notDecodedMetars, _country.code.isEmpty() ? null : _country,
+				_metar.isEmpty() ? null : _metar);
 		model.fireTableDataChanged();
 		selectRow(0);
 	}
