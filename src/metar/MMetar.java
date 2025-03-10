@@ -224,6 +224,11 @@ public class MMetar
 		// 2. Decode after RMK
 		decodeRemarks();
 
+		if (temporary.endsWith(", "))
+			temporary = temporary.substring(0, temporary.length() - 2);
+		if (becoming.endsWith(", "))
+			becoming = becoming.substring(0, becoming.length() - 2);
+
 		// 3. Sort items and remarks by begin
 		Collections.sort(items, new Comparator<MItem>()
 		{
@@ -413,6 +418,7 @@ public class MMetar
 			String rawSpeedUnit = matcher.group(5);
 
 			boolean isTempo = isTempoBeforeRMK(begin);
+			boolean isBecoming = isBecomingBeforeRMK(begin);
 
 			int windDirectionDegree = MMetar.INTEGER_NO_VALUE;
 			if (rawDirection.equals("VRB"))
@@ -420,15 +426,11 @@ public class MMetar
 			else
 				windDirectionDegree = Integer.parseInt(rawDirection);
 
-			StringBuffer buffer = new StringBuffer();
-			if (isTempo)
-				buffer.append("Temporary wind ");
-			else
-				buffer.append("Wind ");
+			StringBuffer buffer = new StringBuffer("Wind ");
 
 			if (rawDirection.equals("VRB"))
 				buffer.append("variable ");
-			else if (!rawDirection.equals("/////"))
+			else
 			{
 				windDirectionDegree = Integer.parseInt(rawDirection);
 				buffer.append(windDirectionDegree + "° ");
@@ -452,6 +454,8 @@ public class MMetar
 
 			if (isTempo)
 				temporary += buffer.toString() + ", ";
+			else if (isBecoming)
+				becoming += buffer.toString() + ", ";
 			else
 			{
 				this.windDirectionDegree = windDirectionDegree;
@@ -459,6 +463,10 @@ public class MMetar
 				this.windGustKt = windGustKt;
 			}
 
+			if (isTempo)
+				buffer.insert(0, "Temporary ");
+			else if (isBecoming)
+				buffer.insert(0, "Becoming ");
 			items.add(new MItem(rawMatch, buffer.toString(), begin, end));
 		}
 	}
