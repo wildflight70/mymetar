@@ -228,6 +228,6 @@ public class MOurAirports
 		ourAirports.downloadAirports();
 		ourAirports.downloadCountries();
 
-		HashMap<String, MCountry> countries = ourAirports.loadCountries();
+		ourAirports.loadCountries();
 	}
 }

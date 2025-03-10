@@ -9,6 +9,7 @@ import javax.swing.table.TableCellRenderer;
 
 import main.MTable;
 
+@SuppressWarnings("serial")
 class MBottomRemarksTable extends JTable
 {
 	public MBottomRemarksTable(MBottomRemarksModel _model)

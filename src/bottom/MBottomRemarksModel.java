@@ -6,6 +6,7 @@ import javax.swing.table.AbstractTableModel;
 
 import metar.MRemark;
 
+@SuppressWarnings("serial")
 class MBottomRemarksModel extends AbstractTableModel
 {
 	private String[] columns = new String[] { "Field", "Explanation" };
