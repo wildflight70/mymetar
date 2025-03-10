@@ -27,6 +27,12 @@ import util.MFormat;
 @SuppressWarnings("serial")
 public class MTop extends JPanel
 {
+	private JCheckBox checkAirportsWithMetar;
+	private JCheckBox checkNotDecodedMetars;
+	private JComboBox<MCountry> comboCountry;
+	private JTextField textMetar;
+	private JTextField textFind;
+
 	private JLabel labelTotalAirportsValue;
 	private JLabel labelVisibleAirportsValue;
 	private JLabel labelFoundAirportsValue;
@@ -88,7 +94,7 @@ public class MTop extends JPanel
 		c.anchor = GridBagConstraints.LINE_END;
 		panel.add(labelAirportsWithMetar, c);
 
-		JCheckBox checkAirportsWithMetar = new JCheckBox();
+		checkAirportsWithMetar = new JCheckBox();
 		c.gridx = 1;
 		c.gridy = 0;
 		c.anchor = GridBagConstraints.LINE_START;
@@ -101,7 +107,7 @@ public class MTop extends JPanel
 		c.anchor = GridBagConstraints.LINE_END;
 		panel.add(labelNotDecodedMetars, c);
 
-		JCheckBox checkNotDecodedMetars = new JCheckBox();
+		checkNotDecodedMetars = new JCheckBox();
 		c.gridx = 1;
 		c.gridy = 1;
 		c.anchor = GridBagConstraints.LINE_START;
@@ -125,11 +131,24 @@ public class MTop extends JPanel
 				return o1.name.compareTo(o2.name);
 			}
 		});
-		JComboBox<MCountry> comboCountry = new JComboBox<MCountry>(countries);
+		comboCountry = new JComboBox<MCountry>(countries);
 		c.gridx = 1;
 		c.gridy = 2;
 		c.anchor = GridBagConstraints.LINE_END;
 		panel.add(comboCountry, c);
+
+		// METAR
+		JLabel labelMetar = new JLabel("METAR");
+		c.gridx = 0;
+		c.gridy = 3;
+		c.anchor = GridBagConstraints.LINE_END;
+		panel.add(labelMetar, c);
+
+		textMetar = new JTextField(10);
+		c.gridx = 1;
+		c.gridy = 3;
+		c.anchor = GridBagConstraints.LINE_START;
+		panel.add(textMetar, c);
 
 		// Listeners
 		ActionListener actionListener = new ActionListener()
@@ -137,16 +156,33 @@ public class MTop extends JPanel
 			@Override
 			public void actionPerformed(ActionEvent e)
 			{
-				table.updateVisible(checkAirportsWithMetar.isSelected(), checkNotDecodedMetars.isSelected(),
-						(MCountry) comboCountry.getSelectedItem());
-				table.updateTop();
+				filter();
 			}
 		};
 		comboCountry.addActionListener(actionListener);
 		checkAirportsWithMetar.addActionListener(actionListener);
 		checkNotDecodedMetars.addActionListener(actionListener);
 
+		textMetar.addKeyListener(new KeyAdapter()
+		{
+			@Override
+			public void keyReleased(KeyEvent e)
+			{
+				if (e.getKeyCode() == KeyEvent.VK_ENTER)
+					filter();
+			}
+		});
+
 		return panel;
+	}
+
+	private void filter()
+	{
+		table.updateVisible(checkAirportsWithMetar.isSelected(), checkNotDecodedMetars.isSelected(),
+				(MCountry) comboCountry.getSelectedItem(), textMetar.getText().trim().toUpperCase());
+		table.updateTop();
+		table.clearFind();
+		textFind.setText("");
 	}
 
 	private JPanel createSearch()
@@ -165,7 +201,7 @@ public class MTop extends JPanel
 		c.anchor = GridBagConstraints.LINE_END;
 		panel.add(labelFind, c);
 
-		JTextField textFind = new JTextField(10);
+		textFind = new JTextField(10);
 		c.gridx = 1;
 		c.gridy = 0;
 		c.anchor = GridBagConstraints.LINE_START;

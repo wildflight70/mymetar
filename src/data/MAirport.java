@@ -1,5 +1,7 @@
 package data;
 
+import metar.MMetar;
+
 public class MAirport
 {
 	public String stationId;

@@ -1,40 +1,43 @@
-package main;
+package bottom;
 
 import java.awt.BorderLayout;
-import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
-import java.util.ArrayList;
 import java.util.HashMap;
 
 import javax.swing.BorderFactory;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
-import javax.swing.JTable;
 import javax.swing.border.Border;
-import javax.swing.table.AbstractTableModel;
-import javax.swing.table.TableCellRenderer;
 
 import data.MAirport;
 import data.MCountry;
-import data.MMetar.MRemark;
 import data.MOurAirports;
+import main.MTable;
+import metar.MMetar;
 import util.MTableColumnAdjuster;
 
 @SuppressWarnings("serial")
 public class MBottom extends JPanel
 {
+	public JLabel labelMetarValue;
 	private JLabel labelAirportValue;
 	private JLabel labelCountryValue;
 	private JLabel labelCityValue;
 
 	private HashMap<String, MCountry> countries;
-	private MBottomModel model;
-	private MBottomTable table;
+
+	private MBottomItemsModel itemsModel;
+	private MBottomItemsTable itemsTable;
+
+	private MBottomRemarksModel remarksModel;
+	private MBottomRemarksTable remarksTable;
+	
+	public MMetar metar;
 
 	private Font boldFont = getFont().deriveFont(Font.BOLD);
 
@@ -50,19 +53,59 @@ public class MBottom extends JPanel
 		GridBagConstraints c = new GridBagConstraints();
 		c.insets = new Insets(2, 2, 2, 2);
 
+		// Metar
 		c.gridx = 0;
 		c.gridy = 0;
+		c.gridwidth = 2;
+		c.anchor = GridBagConstraints.FIRST_LINE_START;
+		panel.add(createMetar(), c);
+		c.gridwidth = 1;
+
+		// Items
+		c.gridx = 0;
+		c.gridy = 1;
+		c.anchor = GridBagConstraints.FIRST_LINE_START;
+		panel.add(createItems(), c);
+		
+		// Remarks
+		c.gridx = 1;
+		c.gridy = 1;
 		c.anchor = GridBagConstraints.FIRST_LINE_START;
 		panel.add(createRemarks(), c);
 
-		c.gridx = 1;
-		c.gridy = 0;
+		// Airport
+		c.gridx = 2;
+		c.gridy = 1;
 		c.anchor = GridBagConstraints.FIRST_LINE_START;
 		c.weightx = 1.0;
 		panel.add(createAirport(), c);
 
 		setLayout(new BorderLayout());
 		add(panel, BorderLayout.NORTH);
+	}
+
+	private JPanel createMetar()
+	{
+		JPanel panel = new JPanel(new GridBagLayout());
+
+		GridBagConstraints c = new GridBagConstraints();
+		c.insets = new Insets(2, 2, 2, 2);
+
+		// METAR
+		JLabel labelMetar = new JLabel("METAR");
+		c.gridx = 0;
+		c.gridy = 0;
+		c.anchor = GridBagConstraints.LINE_END;
+		panel.add(labelMetar, c);
+
+		labelMetarValue = new JLabel("");
+		labelMetarValue.setOpaque(true);
+		c.gridx = 1;
+		c.gridy = 0;
+		c.anchor = GridBagConstraints.LINE_START;
+		panel.add(labelMetarValue, c);
+
+		return panel;
 	}
 
 	private JPanel createAirport()
@@ -118,19 +161,37 @@ public class MBottom extends JPanel
 
 		return panel;
 	}
+	
+	private JPanel createItems()
+	{
+		JPanel panel = new JPanel(new BorderLayout());
+		Border border = BorderFactory.createTitledBorder("Items");
+		panel.setBorder(border);
+		panel.setMinimumSize(new Dimension(500, 200));
+		panel.setPreferredSize(new Dimension(500, 200));
 
+		itemsModel = new MBottomItemsModel();
+		itemsTable = new MBottomItemsTable(itemsModel);
+
+		JScrollPane scrollPane = new JScrollPane(itemsTable);
+
+		panel.add(scrollPane);
+
+		return panel;
+	}
+	
 	private JPanel createRemarks()
 	{
 		JPanel panel = new JPanel(new BorderLayout());
 		Border border = BorderFactory.createTitledBorder("Remarks");
 		panel.setBorder(border);
-		panel.setMinimumSize(new Dimension(500, 100));
-		panel.setPreferredSize(new Dimension(500, 100));
+		panel.setMinimumSize(new Dimension(500, 200));
+		panel.setPreferredSize(new Dimension(500, 200));
 
-		model = new MBottomModel();
-		table = new MBottomTable(model);
+		remarksModel = new MBottomRemarksModel();
+		remarksTable = new MBottomRemarksTable(remarksModel);
 
-		JScrollPane scrollPane = new JScrollPane(table);
+		JScrollPane scrollPane = new JScrollPane(remarksTable);
 
 		panel.add(scrollPane);
 
@@ -139,83 +200,23 @@ public class MBottom extends JPanel
 
 	public void update(MAirport _airport)
 	{
+		metar = _airport.metar;
+		
+		labelMetarValue.setText(_airport.metar == null ? "" : _airport.metar.rawTextHighlight);
+		labelMetarValue
+				.setBackground((_airport.metar == null || !_airport.metar.notDecoded) ? labelAirportValue.getBackground()
+						: MTable.NOT_DECODED_COLOR);
+
 		labelAirportValue.setText(_airport.name);
 		labelCountryValue.setText(countries.get(_airport.country).toString());
 		labelCityValue.setText(_airport.city);
-		model.remarks = _airport.metar == null ? null : _airport.metar.remarks;
-		model.fireTableDataChanged();
-		new MTableColumnAdjuster(table).adjustColumns();
-	}
 
-	private class MBottomModel extends AbstractTableModel
-	{
-		private String[] columns = new String[] { "Field", "Explanation" };
-		public ArrayList<MRemark> remarks;
+		itemsModel.items = _airport.metar == null ? null : _airport.metar.items;
+		itemsModel.fireTableDataChanged();
+		new MTableColumnAdjuster(itemsTable).adjustColumns();
 
-		@Override
-		public int getRowCount()
-		{
-			return remarks == null ? 0 : remarks.size();
-		}
-
-		@Override
-		public int getColumnCount()
-		{
-			return columns.length;
-		}
-
-		@Override
-		public String getColumnName(int column)
-		{
-			return columns[column];
-		}
-
-		@Override
-		public Object getValueAt(int rowIndex, int columnIndex)
-		{
-			if (remarks == null)
-				return null;
-			MRemark remark = remarks.get(rowIndex);
-			switch (columnIndex)
-			{
-			case 0:
-				return remark.field;
-			case 1:
-				return remark.remark;
-			default:
-				return null;
-			}
-		}
-	}
-
-	private class MBottomTable extends JTable
-	{
-		public MBottomTable(MBottomModel _model)
-		{
-			super(_model);
-
-			getTableHeader().setReorderingAllowed(false);
-
-			JLabel label = new JLabel("X");
-			label.setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
-			setRowHeight(label.getPreferredSize().height);
-
-			setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
-		}
-
-		@Override
-		public Component prepareRenderer(TableCellRenderer renderer, int row, int col)
-		{
-			Component c = super.prepareRenderer(renderer, row, col);
-
-			// Set background row color
-			if (!isCellSelected(row, col))
-				if (row % 2 == 0)
-					c.setBackground(getBackground());
-				else
-					c.setBackground(MTable.ROW_BACKGROUND_COLOR);
-
-			return c;
-		}
+		remarksModel.remarks = _airport.metar == null ? null : _airport.metar.remarks;
+		remarksModel.fireTableDataChanged();
+		new MTableColumnAdjuster(remarksTable).adjustColumns();
 	}
 }

@@ -1,4 +1,4 @@
-package data;
+package metar;
 
 import java.util.HashMap;
 
@@ -6,7 +6,6 @@ public class MMetarDefinitions
 {
 	public static MMetarDefinitions instance = new MMetarDefinitions();
 
-	public HashMap<String, String> covers;
 	public HashMap<String, String> weathers;
 	public HashMap<String, String> runwayCoverages;
 	public HashMap<String, String> runwayBrakingActions;
@@ -17,14 +16,10 @@ public class MMetarDefinitions
 	public HashMap<String, String> pressureTendencyRemarks;
 	public HashMap<String, String> automatedStationTypeRemarks;
 	public HashMap<String, String> sensorRemarks;
-	public HashMap<String, String> dataMissingRemarks;
-	public HashMap<String, String> skyCoverageRemarks;
 	public HashMap<String, String> cloudRemarks;
-	public HashMap<String, String> weatherRemarks;
 
 	private MMetarDefinitions()
 	{
-		initCovers();
 		initWeathers();
 		initRunwayCoverages();
 		initRunwayBrakingActions();
@@ -35,73 +30,86 @@ public class MMetarDefinitions
 		initPressureTendencyRemarks();
 		initAutomatedStationTypeRemarks();
 		initSensorRemarks();
-		initDataMissingRemarks();
-		initSkyCoverageRemarks();
 		initCloudRemarks();
-		initWeatherRemarks();
 	}
 
 	private void initColorRemarks()
 	{
 		colorRemarks = new HashMap<String, String>();
-		colorRemarks.put("BLU", "Blue, good conditions");
-		colorRemarks.put("BLU+", "Blue, optimal conditions");
-		colorRemarks.put("GRN", "Green, VFR conditions");
-	}
-	
-	private void initCovers()
-	{
-		covers = new HashMap<String, String>();
-		covers.put("CAVOK", "CAVOK");
-		covers.put("CLR", "Clear");
-		covers.put("SKC", "Clear");
-		covers.put("NSC", "No signifiant cloud");
-		covers.put("NSW", "No signifiant weather");
-		covers.put("NCD", "No cloud detected");
-		covers.put("FEW", "Few");
-		covers.put("SCT", "Scattered");
-		covers.put("BKN", "Broken");
-		covers.put("OVC", "Overcast");
-		covers.put("VV", "Sky obscured");
-	}
 
+		colorRemarks.put("BLACK", "Black, Operations restricted or closed");
+		
+		colorRemarks.put("YLO", "Yellow, IFR conditions");
+		colorRemarks.put("YLO1", "Yellow, IFR conditions");
+		colorRemarks.put("YLO2", "Yellow, IFR conditions");
+		colorRemarks.put("AMB", "Amber, IFR conditions");
+		colorRemarks.put("RED", "Red, low IFR conditions");
+	
+		colorRemarks.put("BLACKBLU", "Black blue, excellent VFR conditions");
+		colorRemarks.put("BLACKGRN", "Black blue, good VFR conditions");
+		colorRemarks.put("BLU", "Blue, good VFR conditions");
+		colorRemarks.put("BLU+", "Blue, optimal VFR conditions");
+		colorRemarks.put("GRN", "Green, VFR conditions");
+		colorRemarks.put("WHT", "White, low VFR conditions");
+	}	
+	
 	private void initWeathers()
 	{
 		weathers = new HashMap<String, String>();
 		weathers.put("-", "Light");
 		weathers.put("+", "Heavy");
-		weathers.put("VC", "In vicinity");
 		weathers.put("RE", "Recent");
+		weathers.put("VC", "In vicinity");
 
-		weathers.put("MI", "Shallow");
 		weathers.put("BC", "Patches");
-		weathers.put("DR", "Low drifting");
 		weathers.put("BL", "Blowing");
+		weathers.put("DR", "Low drifting");
+		weathers.put("FZ", "Freezing");
+		weathers.put("MI", "Shallow");
 		weathers.put("SH", "Showers");
 		weathers.put("TS", "Thunderstorm");
-		weathers.put("FZ", "Freezing");
 
-		weathers.put("VCSH", "Vicinity showers");
-		weathers.put("RA", "Rain");
+		weathers.put("BR", "Mist");
+		weathers.put("DS", "Dust storm");
+		weathers.put("DU", "Widespread dust");
 		weathers.put("DZ", "Drizzle");
-		weathers.put("SN", "Snow");
-		weathers.put("SG", "Snow grains");
-		weathers.put("IC", "Ice crystals");
-		weathers.put("PL", "Ice pellets");
+		weathers.put("FC", "Funnel cloud");
+		weathers.put("FG", "Fog");
+		weathers.put("FU", "Smoke");
 		weathers.put("GR", "Hail");
 		weathers.put("GS", "Small hail");
-		weathers.put("FG", "Fog");
-		weathers.put("BR", "Mist");
 		weathers.put("HZ", "Haze");
-		weathers.put("FU", "Smoke");
-		weathers.put("VA", "Volcanic ash");
-		weathers.put("DU", "Widespread dust");
+		weathers.put("RA", "Rain");
+		weathers.put("RADZ", "Drizzle rain");
+		weathers.put("RASN", "Snow rain");
 		weathers.put("SA", "Sand");
 		weathers.put("SQ", "Squall");
-		weathers.put("FC", "Funnel cloud");
+		weathers.put("IC", "Ice crystals");
+		weathers.put("PL", "Ice pellets");
+		weathers.put("SG", "Snow grains");
+		weathers.put("SN", "Snow");
 		weathers.put("SS", "Sandstorm");
-		weathers.put("DS", "Dust storm");
-	}
+		weathers.put("VA", "Volcanic ash");
+		weathers.put("VCSH", "Vicinity showers");
+
+		weathers.put("CAVOK", "CAVOK");
+		weathers.put("BKN", "Broken");
+		weathers.put("CLR", "Clear");
+		weathers.put("FEW", "Few");
+		weathers.put("NCD", "No cloud detected");
+		weathers.put("NSC", "No signifiant cloud");
+		weathers.put("NSW", "No signifiant weather");
+		weathers.put("OVC", "Overcast");
+		weathers.put("SCT", "Scattered");
+		weathers.put("SKC", "Clear");
+		weathers.put("VV", "Sky obscured");
+		
+		weathers.put("SNW CVR/TRACE LOOSE", "Snow cover, trace amounts, loosely packed");
+		weathers.put("SNOW COVER HARD PACK", "Snow cover is hard-packed");
+		weathers.put("SNW CVR/MUCH LOOSE", "Snow cover is loose and easily lifted by the wind");
+		weathers.put("SNW COV/MUCH LOOSE", "Snow cover is loose and easily lifted by the wind");
+		weathers.put("SNW CVR/MEDIUM PACK", "Snow cover is medium packed");
+}
 
 	private void initPressureTendencyRemarks()
 	{
@@ -123,6 +131,7 @@ public class MMetarDefinitions
 		automatedStationTypeRemarks.put("A01", "Automated station without a precipitation sensor");
 		automatedStationTypeRemarks.put("AO1", "Automated station without a precipitation sensor");
 		automatedStationTypeRemarks.put("A02", "Automated station with a precipitation sensor");
+		automatedStationTypeRemarks.put("A02A", "Automated station with a precipitation sensor");
 		automatedStationTypeRemarks.put("AO2", "Automated station with a precipitation sensor");
 		automatedStationTypeRemarks.put("AO2A", "Automated station with a precipitation sensor");
 	}
@@ -139,21 +148,8 @@ public class MMetarDefinitions
 		sensorRemarks.put("SLPNO", "Sea level pressure not operational");
 		sensorRemarks.put("TSNO", "Thunderstorm sensor not operational");
 		sensorRemarks.put("VISNO", "Visibility sensor not operational");
-	}
-
-	private void initDataMissingRemarks()
-	{
-		dataMissingRemarks = new HashMap<String, String>();
-		dataMissingRemarks.put("WIND MISG", "Wind missing");
-		dataMissingRemarks.put("CLD MISG", "Clouds missing");
-		dataMissingRemarks.put("WX MISG", "Weather missing");
-		dataMissingRemarks.put("VIS MISG", "Visibility missing");
-		dataMissingRemarks.put("PCPN MISG", "Precipitation missing");
-		dataMissingRemarks.put("PRES MISG", "Pressure missing");
-		dataMissingRemarks.put("T MISG", "Temperature missing");
-		dataMissingRemarks.put("DP MISG", "Dew point missing");
-		dataMissingRemarks.put("ICE MISG", "Icing missing");
-		dataMissingRemarks.put("DENSITY ALT MISG", "Density altitude missing");
+		sensorRemarks.put("WIND SENSOR OFFLINE", "Wind sensor not operational");
+		sensorRemarks.put("RTS", "Return to service");
 	}
 
 	private void initRunwayTrends()
@@ -200,53 +196,54 @@ public class MMetarDefinitions
 		runwayBrakingActions.put("99", "Runway not operational");
 	}
 
-	private void initSkyCoverageRemarks()
-	{
-		skyCoverageRemarks = new HashMap<String, String>();
-		skyCoverageRemarks.put("AC", "Altocumulus");
-		skyCoverageRemarks.put("AS", "Altostratus");
-		skyCoverageRemarks.put("CC", "Cirro-cumulus");
-		skyCoverageRemarks.put("CF", "Cumulus fractus");
-		skyCoverageRemarks.put("CI", "Cirrus");
-		skyCoverageRemarks.put("CS", "Cirrostratus");
-		skyCoverageRemarks.put("CU", "Cumulus");
-		skyCoverageRemarks.put("FG", "Fog");
-		skyCoverageRemarks.put("HZ", "Haze");
-		skyCoverageRemarks.put("IC", "Ice crystals");
-		skyCoverageRemarks.put("NS", "Nimbostratus");
-		skyCoverageRemarks.put("SC", "Stratocumulus");
-		skyCoverageRemarks.put("SF", "Stratus fractus");
-		skyCoverageRemarks.put("SN", "Snow");
-		skyCoverageRemarks.put("ST", "Stratus");
-	}
-
 	private void initCloudRemarks()
 	{
 		cloudRemarks = new HashMap<String, String>();
-		cloudRemarks.put("AC CUGEN", "Altocumulus castellanus generated by convection");
+		cloudRemarks.put("AC", "Altocumulus");
+		cloudRemarks.put("AC CUGEN", "Altocumulus cumulus generated");
 		cloudRemarks.put("AC OP", "Altocumulus opacus");
 		cloudRemarks.put("AC TR", "Altocumulus translucidus");
+		cloudRemarks.put("ACC", "Altocumulus castellanus");
+		cloudRemarks.put("ACC TR", "Altocumulus castellanus translucidus");
+		cloudRemarks.put("AS", "Altostratus");
 		cloudRemarks.put("AS TR", "Altostratus translucidus");
+		cloudRemarks.put("BLSN", "Blowing snow");
+		cloudRemarks.put("BLSN OCNL", "Occasional blowing snow");
 		cloudRemarks.put("CB", "Cumulonimbus");
+		cloudRemarks.put("CC", "Cirro-cumulus");
+		cloudRemarks.put("CF", "Cumulus fractus");
 		cloudRemarks.put("CF TR", "Cumulus fractus translucidus");
+		cloudRemarks.put("CI", "Cirrus");
 		cloudRemarks.put("CI TR", "Cirrus translucidus");
+		cloudRemarks.put("CIG", "Ceiling");
+		cloudRemarks.put("CLD", "Clouds");
+		cloudRemarks.put("CLD EMBD", "Embedded clouds");
+		cloudRemarks.put("CS", "Cirrostratus");
+		cloudRemarks.put("CU", "Cumulus");
+		cloudRemarks.put("CVCTV", "Convective clouds");
+		cloudRemarks.put("FG", "Fog");
+		cloudRemarks.put("FU ALQDS", "Smoke in all quadrants");
+		cloudRemarks.put("HALO", "Halo");
+		cloudRemarks.put("HZ", "Haze");
+		cloudRemarks.put("IC", "Ice crystals");
+		cloudRemarks.put("ICE", "Ice");
+		cloudRemarks.put("LGT ICG", "Light ice crystals");
+		cloudRemarks.put("NS", "Nimbostratus");
 		cloudRemarks.put("OCNL BLSN", "Occasional blowing snow");
+		cloudRemarks.put("RAG", "Ragged clouds");
+		cloudRemarks.put("SC", "Stratocumulus");
 		cloudRemarks.put("SC CL", "Stratocumulus castellanus");
 		cloudRemarks.put("SC OP", "Stratocumulus opacus");
 		cloudRemarks.put("SC TR", "Stratocumulus translucidus");
+		cloudRemarks.put("SF", "Stratus fractus");
 		cloudRemarks.put("SF TR", "Stratus fractus translucidus");
+		cloudRemarks.put("SMOKE FU ALL QUADS", "Smoke in all quadrants");
+		cloudRemarks.put("SN", "Snow");
+		cloudRemarks.put("SNW", "Snow");
 		cloudRemarks.put("SOG TR", "Snow on the ground translucidus");
+		cloudRemarks.put("ST", "Stratus");
 		cloudRemarks.put("ST TR", "Stratus translucidus");
 		cloudRemarks.put("TCU", "Towering cumulus");
-	}
-	
-	private void initWeatherRemarks()
-	{
-		weatherRemarks = new HashMap<String, String>();
-		weatherRemarks.put("HALO", "Halo");
-		weatherRemarks.put("CIG", "Ceiling");
-		weatherRemarks.put("ICE", "Ice");
-		weatherRemarks.put("RAG", "Ragged clouds");
-		weatherRemarks.put("SNW", "Halo");
+		cloudRemarks.put("WX", "Weather");
 	}
 }

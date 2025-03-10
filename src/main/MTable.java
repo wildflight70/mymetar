@@ -24,6 +24,7 @@ import javax.swing.table.TableColumn;
 
 import org.tinylog.Logger;
 
+import bottom.MBottom;
 import data.MAirport;
 import data.MCountry;
 import util.MClipboard;
@@ -35,7 +36,7 @@ public class MTable extends JTable
 	public final static Color ROW_BACKGROUND_COLOR = new Color(225, 240, 225);
 	private final static Color EXTRA_COLOR = new Color(200, 255, 200);
 	private final static Color FOUND_COLOR = Color.BLUE;
-	private final static Color NOT_DECODED_COLOR = new Color(255, 200, 200);
+	public final static Color NOT_DECODED_COLOR = new Color(255, 200, 200);
 
 	private MModel model;
 
@@ -144,8 +145,8 @@ public class MTable extends JTable
 	{
 		JPopupMenu popup = new JPopupMenu();
 
-		JMenuItem menuItemLoadAPI = new JMenuItem("Copy METAR to clipboard");
-		menuItemLoadAPI.addActionListener(new ActionListener()
+		JMenuItem menuItemCopyMetarClipboard = new JMenuItem("Copy METAR to clipboard");
+		menuItemCopyMetarClipboard.addActionListener(new ActionListener()
 		{
 			@Override
 			public void actionPerformed(ActionEvent e)
@@ -153,7 +154,35 @@ public class MTable extends JTable
 				doCopyMetarToClipboard();
 			}
 		});
-		popup.add(menuItemLoadAPI);
+		popup.add(menuItemCopyMetarClipboard);
+
+		JMenuItem menuItemCopyMetarHighlightClipboard = new JMenuItem("Copy highlight METAR to clipboard");
+		menuItemCopyMetarHighlightClipboard.addActionListener(new ActionListener()
+		{
+			@Override
+			public void actionPerformed(ActionEvent e)
+			{
+				int selectedRow = getSelectedRow();
+				MAirport selectedAirport = model.visibleAirports.get(selectedRow);
+				if (selectedAirport.metar != null)
+					new MClipboard().copy(selectedAirport.metar.rawTextHighlight);
+			}
+		});
+		popup.add(menuItemCopyMetarHighlightClipboard);
+
+		JMenuItem menuItemPrintMetar = new JMenuItem("Print METAR to output");
+		menuItemPrintMetar.addActionListener(new ActionListener()
+		{
+			@Override
+			public void actionPerformed(ActionEvent e)
+			{
+				int selectedRow = getSelectedRow();
+				MAirport selectedAirport = model.visibleAirports.get(selectedRow);
+				if (selectedAirport.metar != null)
+					System.out.println(selectedAirport.metar.debug());
+			}
+		});
+		popup.add(menuItemPrintMetar);
 
 		addMouseListener(new MouseAdapter()
 		{
@@ -298,17 +327,14 @@ public class MTable extends JTable
 
 		MAirport selectedAirport = model.visibleAirports.get(selectedRow);
 		if (selectedAirport.metar != null)
-		{
 			new MClipboard().copy(selectedAirport.metar.rawText);
-		}
 	}
 
-	public void updateVisible(boolean _showOnlyAirportsWithMetar, boolean _notDecodedMetars, MCountry _country)
+	public void updateVisible(boolean _showOnlyAirportsWithMetar, boolean _notDecodedMetars, MCountry _country,
+			String _metar)
 	{
-		model.filterShowOnlyAirportsWithMetar = _showOnlyAirportsWithMetar;
-		model.filterNotDecodedMetars = _notDecodedMetars;
-		model.filterCountry = _country.code.isEmpty() ? null : _country;
-		model.updateVisible();
+		model.updateVisible(_showOnlyAirportsWithMetar, _notDecodedMetars, _country.code.isEmpty() ? null : _country,
+				_metar.isEmpty() ? null : _metar);
 		model.fireTableDataChanged();
 		selectRow(0);
 	}
@@ -317,5 +343,12 @@ public class MTable extends JTable
 	{
 		MTop.instance.update(model.getTotalAirports(), model.getVisibleAirports(), findRows.size(), model.getTotalMetars(),
 				model.getTotalMetarNotDecoded());
+	}
+
+	public void clearFind()
+	{
+		findText = "";
+		findRow = 0;
+		findRows.clear();
 	}
 }
