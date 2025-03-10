@@ -101,16 +101,16 @@ public class MMetar
 		posBecomingBeforeRMK = rawTextBeforeRMK.indexOf("BECMG");
 	}
 
-	private String highlight()
+	public String highlight(MItem _highlightItem, MRemark _highlightRemark)
 	{
 		StringBuffer buffer = new StringBuffer("<html>");
 
-		buffer.append(highlight(items, rawTextBeforeRMK));
+		buffer.append(highlight(items, rawTextBeforeRMK, _highlightItem));
 
 		if (rawTextAfterRMK != null)
 		{
 			buffer.append(" <b>RMK</b> ");
-			buffer.append(highlight(remarks, rawTextAfterRMK));
+			buffer.append(highlight(remarks, rawTextAfterRMK, _highlightRemark));
 		}
 
 		buffer.append("</html>");
@@ -121,7 +121,7 @@ public class MMetar
 		return text;
 	}
 
-	private String highlight(ArrayList<? extends MItem> _items, String _text)
+	private String highlight(ArrayList<? extends MItem> _items, String _text, MItem _highlightItem)
 	{
 		StringBuffer buffer = new StringBuffer();
 		int posText = 0;
@@ -129,7 +129,15 @@ public class MMetar
 		{
 			buffer.append(_text.substring(posText, item.begin));
 			buffer.append("<b>");
+
+			if (_highlightItem != null && item.equals(_highlightItem))
+				buffer.append("<font color=#ff0000>");
+
 			buffer.append(item.field);
+
+			if (_highlightItem != null && item.equals(_highlightItem))
+				buffer.append("</font>");
+
 			buffer.append("</b>");
 			posText = item.end;
 		}
@@ -249,7 +257,7 @@ public class MMetar
 		});
 
 		// 4. Update rawTextHighlight and highlight groups of slashes
-		rawTextHighlight = highlight();
+		rawTextHighlight = highlight(null, null);
 		decodeSlash();
 
 		// 5. Check if metar is not totally decoded

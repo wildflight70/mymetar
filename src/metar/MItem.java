@@ -21,4 +21,11 @@ public class MItem
 	{
 		return field + ":" + value + " [" + begin + "-" + end + "]";
 	}
+
+	@Override
+	public boolean equals(Object _object)
+	{
+		MItem other = (MItem) _object;
+		return begin == other.begin && end == other.end;
+	}
 }

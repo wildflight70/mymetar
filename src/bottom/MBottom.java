@@ -18,12 +18,13 @@ import data.MAirport;
 import data.MCountry;
 import data.MOurAirports;
 import main.MTable;
+import metar.MMetar;
 import util.MTableColumnAdjuster;
 
 @SuppressWarnings("serial")
 public class MBottom extends JPanel
 {
-	private JLabel labelMetarValue;
+	public JLabel labelMetarValue;
 	private JLabel labelAirportValue;
 	private JLabel labelCountryValue;
 	private JLabel labelCityValue;
@@ -35,6 +36,8 @@ public class MBottom extends JPanel
 
 	private MBottomRemarksModel remarksModel;
 	private MBottomRemarksTable remarksTable;
+	
+	public MMetar metar;
 
 	private Font boldFont = getFont().deriveFont(Font.BOLD);
 
@@ -197,6 +200,8 @@ public class MBottom extends JPanel
 
 	public void update(MAirport _airport)
 	{
+		metar = _airport.metar;
+		
 		labelMetarValue.setText(_airport.metar == null ? "" : _airport.metar.rawTextHighlight);
 		labelMetarValue
 				.setBackground((_airport.metar == null || !_airport.metar.notDecoded) ? labelAirportValue.getBackground()

@@ -5,9 +5,12 @@ import java.awt.Component;
 import javax.swing.BorderFactory;
 import javax.swing.JLabel;
 import javax.swing.JTable;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
 import javax.swing.table.TableCellRenderer;
 
 import main.MTable;
+import metar.MItem;
 
 @SuppressWarnings("serial")
 class MBottomItemsTable extends JTable
@@ -23,6 +26,20 @@ class MBottomItemsTable extends JTable
 		setRowHeight(label.getPreferredSize().height);
 
 		setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+
+		getSelectionModel().addListSelectionListener(new ListSelectionListener()
+		{
+			@Override
+			public void valueChanged(ListSelectionEvent e)
+			{
+				if (!e.getValueIsAdjusting())
+				{
+					int row = getSelectedRow();
+					if (row >= 0 && row < getRowCount())
+						doHighlight(_model.items.get(row));
+				}
+			}
+		});
 	}
 
 	@Override
@@ -38,5 +55,11 @@ class MBottomItemsTable extends JTable
 				c.setBackground(MTable.ROW_BACKGROUND_COLOR);
 
 		return c;
+	}
+
+	private void doHighlight(MItem _item)
+	{
+		String text = MBottom.instance.metar.highlight(_item, null);
+		MBottom.instance.labelMetarValue.setText(text);
 	}
 }
