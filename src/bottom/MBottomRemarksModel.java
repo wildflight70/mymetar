@@ -4,7 +4,7 @@ import java.util.ArrayList;
 
 import javax.swing.table.AbstractTableModel;
 
-import data.MMetar.MRemark;
+import metar.MRemark;
 
 class MBottomRemarksModel extends AbstractTableModel
 {

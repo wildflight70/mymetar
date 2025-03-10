@@ -1,4 +1,4 @@
-package data;
+package metar;
 
 import java.util.HashMap;
 

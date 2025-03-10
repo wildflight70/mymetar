@@ -20,6 +20,8 @@ import java.util.zip.GZIPInputStream;
 
 import org.tinylog.Logger;
 
+import metar.MMetar;
+
 public class MNOAAAPI
 {
 	public static final String NOAA_METAR_CSV_URL = "https://aviationweather.gov/data/cache/metars.cache.csv.gz";

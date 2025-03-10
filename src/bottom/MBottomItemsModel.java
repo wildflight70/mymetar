@@ -4,7 +4,7 @@ import java.util.ArrayList;
 
 import javax.swing.table.AbstractTableModel;
 
-import data.MMetar.MItem;
+import metar.MItem;
 
 @SuppressWarnings("serial")
 class MBottomItemsModel extends AbstractTableModel

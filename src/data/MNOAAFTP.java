@@ -23,6 +23,7 @@ import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.net.ftp.FTPFile;
 import org.tinylog.Logger;
 
+import metar.MMetar;
 import util.MProperties;
 
 public class MNOAAFTP

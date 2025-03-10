@@ -14,13 +14,13 @@ import org.tinylog.Logger;
 
 import data.MAirport;
 import data.MCountry;
-import data.MMetar;
 import data.MNOAAAPI;
 import data.MNOAAFTP;
 import data.MOurAirports;
 import data.MXPlane;
 import data.MXPlaneAirport;
 import main.MColumn.MColumnValue;
+import metar.MMetar;
 import util.MFormat;
 
 @SuppressWarnings("serial")
