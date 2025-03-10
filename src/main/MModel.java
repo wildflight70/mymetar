@@ -482,6 +482,15 @@ public class MModel extends AbstractTableModel
 			}
 		}));
 
+		columns.put(col++, new MColumn("Becoming", false, SwingConstants.LEFT, null, new MColumnValue()
+		{
+			@Override
+			public Object get(MAirport _airport)
+			{
+				return _airport.metar == null ? null : _airport.metar.becoming;
+			}
+		}));
+
 		columns.put(col++, new MColumn("Auto", false, SwingConstants.CENTER, null, new MColumnValue()
 		{
 			@Override

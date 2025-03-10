@@ -28,6 +28,7 @@ import util.MTableColumnAdjuster;
 @SuppressWarnings("serial")
 public class MBottom extends JPanel
 {
+	private JLabel labelMetarValue;
 	private JLabel labelAirportValue;
 	private JLabel labelCountryValue;
 	private JLabel labelCityValue;
@@ -50,19 +51,53 @@ public class MBottom extends JPanel
 		GridBagConstraints c = new GridBagConstraints();
 		c.insets = new Insets(2, 2, 2, 2);
 
+		// Metar
 		c.gridx = 0;
 		c.gridy = 0;
+		c.gridwidth = 2;
+		c.anchor = GridBagConstraints.FIRST_LINE_START;
+		panel.add(createMetar(), c);
+		c.gridwidth = 1;
+
+		// Remarks
+		c.gridx = 0;
+		c.gridy = 1;
 		c.anchor = GridBagConstraints.FIRST_LINE_START;
 		panel.add(createRemarks(), c);
 
+		// Airport
 		c.gridx = 1;
-		c.gridy = 0;
+		c.gridy = 1;
 		c.anchor = GridBagConstraints.FIRST_LINE_START;
 		c.weightx = 1.0;
 		panel.add(createAirport(), c);
 
 		setLayout(new BorderLayout());
 		add(panel, BorderLayout.NORTH);
+	}
+
+	private JPanel createMetar()
+	{
+		JPanel panel = new JPanel(new GridBagLayout());
+
+		GridBagConstraints c = new GridBagConstraints();
+		c.insets = new Insets(2, 2, 2, 2);
+
+		// METAR
+		JLabel labelMetar = new JLabel("METAR");
+		c.gridx = 0;
+		c.gridy = 0;
+		c.anchor = GridBagConstraints.LINE_END;
+		panel.add(labelMetar, c);
+
+		labelMetarValue = new JLabel("");
+		labelMetarValue.setOpaque(true);
+		c.gridx = 1;
+		c.gridy = 0;
+		c.anchor = GridBagConstraints.LINE_START;
+		panel.add(labelMetarValue, c);
+
+		return panel;
 	}
 
 	private JPanel createAirport()
@@ -139,6 +174,11 @@ public class MBottom extends JPanel
 
 	public void update(MAirport _airport)
 	{
+		labelMetarValue.setText(_airport.metar == null ? "" : _airport.metar.rawTextHighlight);
+		labelMetarValue
+				.setBackground((_airport.metar == null || !_airport.metar.notDecoded) ? labelAirportValue.getBackground()
+						: MTable.NOT_DECODED_COLOR);
+
 		labelAirportValue.setText(_airport.name);
 		labelCountryValue.setText(countries.get(_airport.country).toString());
 		labelCityValue.setText(_airport.city);

@@ -35,7 +35,7 @@ public class MTable extends JTable
 	public final static Color ROW_BACKGROUND_COLOR = new Color(225, 240, 225);
 	private final static Color EXTRA_COLOR = new Color(200, 255, 200);
 	private final static Color FOUND_COLOR = Color.BLUE;
-	private final static Color NOT_DECODED_COLOR = new Color(255, 200, 200);
+	public final static Color NOT_DECODED_COLOR = new Color(255, 200, 200);
 
 	private MModel model;
 

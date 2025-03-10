@@ -42,6 +42,7 @@ public class MMetar
 	public ArrayList<MRunwayVisualRange> runwayVisualRanges;
 	public ArrayList<MRunwayCondition> runwayConditions;
 	public String temporary = "";
+	public String becoming = "";
 
 	private ArrayList<MItem> items;
 	public ArrayList<MRemark> remarks;
@@ -59,6 +60,7 @@ public class MMetar
 	private String rawTextAfterRMK;
 
 	private int posTempoBeforeRMK = -1;
+	private int posBecomingBeforeRMK = -1;
 
 	public class MItem
 	{
@@ -230,6 +232,7 @@ public class MMetar
 		items = new ArrayList<MItem>();
 
 		posTempoBeforeRMK = rawTextBeforeRMK.indexOf("TEMPO");
+		posBecomingBeforeRMK = rawTextBeforeRMK.indexOf("BECMG");
 	}
 
 	private String highlight()
@@ -246,7 +249,10 @@ public class MMetar
 
 		buffer.append("</html>");
 
-		return buffer.toString().replace("TEMPO", "<b>TEMPO</b>");
+		String text = buffer.toString().replace("TEMPO", "<b>TEMPO</b>");
+		text = text.replace("BECMG", "<b>BECMG</b>");
+
+		return text;
 	}
 
 	private String highlight(ArrayList<? extends MItem> _items, String _text)
@@ -347,6 +353,7 @@ public class MMetar
 		decodeRunwayConditions();
 		decodeAirfieldElevation();
 		decodeColor();
+		decodeBecomingTime();
 
 		// 2. Decode after RMK
 		decodeRemarks();
@@ -590,6 +597,29 @@ public class MMetar
 		}
 	}
 
+	private static final Pattern PATTERN_BECOMING_TIME = Pattern.compile("\\bTL(\\d{2})(\\d{2})");
+
+	private void decodeBecomingTime()
+	{
+		Matcher matcher = PATTERN_BECOMING_TIME.matcher(rawTextBeforeRMK);
+		while (matcher.find())
+		{
+			String rawMatch = matcher.group(0);
+			int begin = matcher.start(0);
+			int end = matcher.end(0);
+
+			String rawHour = matcher.group(1);
+			String rawMinute = matcher.group(2);
+
+			if (isBecomingBeforeRMK(begin))
+			{
+				String buffer = "Becoming by " + Integer.parseInt(rawHour) + ":" + Integer.parseInt(rawMinute) + "Z";
+
+				items.add(new MItem(rawMatch, buffer, begin, end));
+			}
+		}
+	}
+
 	private double parseFractionalMiles(String _fraction)
 	{
 		if (_fraction.contains("/"))
@@ -627,6 +657,7 @@ public class MMetar
 			int end = matcher.end(0);
 
 			boolean isTempo = isTempoBeforeRMK(begin);
+			boolean isBecoming = isBecomingBeforeRMK(begin);
 
 			String rawVisibility = matcher.group(1);
 			String rawVisibilityUnit = matcher.group("unit");
@@ -637,11 +668,19 @@ public class MMetar
 				if (rawVisibilityUnit.equals("KM"))
 					visibilitySM = Math.round(10.0 * MUnit.metersToSM(visibility * 1000)) / 10.0;
 
-				String buffer = isTempo ? "Temporary visibility" : "Visibility";
+				String buffer;
+				if (isTempo)
+					buffer = "Temporary visibility";
+				else if (isBecoming)
+					buffer = "Becoming visibility";
+				else
+					buffer = "Visibility";
 				buffer += "=" + visibilitySM + " SM, ";
 
 				if (isTempo)
 					temporary += buffer;
+				else if (isBecoming)
+					becoming += buffer;
 				else
 					this.visibilitySM = visibilitySM;
 
@@ -660,6 +699,8 @@ public class MMetar
 					StringBuffer buffer = new StringBuffer();
 					if (isTempo)
 						buffer.append("Temporary visibility=" + visibilitySM + " SM, ");
+					else if (isBecoming)
+						buffer.append("Becoming visibility=" + visibilitySM + " SM, ");
 					else
 						buffer.append("Visibility=" + visibilitySM + " SM");
 					if (visibilityNonDirectionalVariation)
@@ -667,6 +708,8 @@ public class MMetar
 
 					if (isTempo)
 						temporary += buffer.toString();
+					else if (isBecoming)
+						becoming += buffer.toString();
 					else
 					{
 						this.visibilitySM = visibilitySM;
@@ -783,7 +826,7 @@ public class MMetar
 			items.add(new MItem(rawMatch, type, begin, end));
 		}
 	}
-	
+
 	private void decodeCovers()
 	{
 		decodeCovers(" ///TCU ");
@@ -826,6 +869,11 @@ public class MMetar
 			{
 				temporary += cover.toString() + ", ";
 				buffer.append("Temporary " + cover.toString());
+			}
+			else if (isBecomingBeforeRMK(begin))
+			{
+				becoming += cover.toString() + ", ";
+				buffer.append("Becoming " + cover.toString());
 			}
 			else
 			{
@@ -1646,6 +1694,11 @@ public class MMetar
 	private boolean isTempoBeforeRMK(int _begin)
 	{
 		return posTempoBeforeRMK >= 0 && _begin > posTempoBeforeRMK;
+	}
+
+	private boolean isBecomingBeforeRMK(int _begin)
+	{
+		return posBecomingBeforeRMK >= 0 && _begin > posBecomingBeforeRMK;
 	}
 
 	public String debug()
