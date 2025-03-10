@@ -313,7 +313,7 @@ public class MMetar
 		rawTextHighlight = buffer.toString();
 	}
 
-	private static final Pattern PATTERN_COLOR = Pattern.compile("\\b(AMB|(BLACK)?BLU|(BLACK)?GRN|RED|WHT|YLO)\\+?");
+	private static final Pattern PATTERN_COLOR = Pattern.compile("\\b(AMB|(BLACK)?BLU|(BLACK)?GRN|RED|WHT|YLO[12]?)\\+?");
 
 	private void decodeColor()
 	{
@@ -530,26 +530,24 @@ public class MMetar
 			if (rawVisibilityUnit != null)
 			{
 				double visibility = parseFractionalMiles(rawVisibility);
-				double visibilitySM = Math.round(10.0 * visibility) / 10.0;
 				if (rawVisibilityUnit.equals("KM"))
-					visibilitySM = Math.round(10.0 * MUnit.metersToSM(visibility * 1000)) / 10.0;
+					visibility = MUnit.metersToSM(visibility * 1000);
 
-				String buffer;
-				if (isTempo)
-					buffer = "Temporary visibility";
-				else if (isBecoming)
-					buffer = "Becoming visibility";
-				else
-					buffer = "Visibility";
-				buffer += "=" + visibilitySM + " SM, ";
+				double visibilitySM = Math.round(10.0 * visibility) / 10.0;
+
+				String buffer = "Visibility=" + visibilitySM + " SM";
 
 				if (isTempo)
-					temporary += buffer;
+					temporary += buffer + ", ";
 				else if (isBecoming)
-					becoming += buffer;
+					becoming += buffer + ", ";
 				else
 					this.visibilitySM = visibilitySM;
 
+				if (isTempo)
+					buffer = "Temporary " + buffer;
+				else if (isBecoming)
+					buffer = "Becoming " + buffer;
 				items.add(new MItem(rawMatch, buffer, begin, end));
 			}
 			else
@@ -562,26 +560,24 @@ public class MMetar
 					visibilitySM = Math.round(10.0 * MUnit.metersToSM(visibilitySM)) / 10.0;
 					boolean visibilityNonDirectionalVariation = rawVisibilityIndicator != null;
 
-					StringBuffer buffer = new StringBuffer();
-					if (isTempo)
-						buffer.append("Temporary visibility=" + visibilitySM + " SM, ");
-					else if (isBecoming)
-						buffer.append("Becoming visibility=" + visibilitySM + " SM, ");
-					else
-						buffer.append("Visibility=" + visibilitySM + " SM");
+					StringBuffer buffer = new StringBuffer("Visibility=" + visibilitySM + " SM");
 					if (visibilityNonDirectionalVariation)
-						buffer.append(" SM non directional variation");
+						buffer.append(" non directional variation");
 
 					if (isTempo)
-						temporary += buffer.toString();
+						temporary += buffer.toString() + ", ";
 					else if (isBecoming)
-						becoming += buffer.toString();
+						becoming += buffer.toString() + ", ";
 					else
 					{
 						this.visibilitySM = visibilitySM;
 						this.visibilityNonDirectionalVariation = visibilityNonDirectionalVariation;
 					}
 
+					if (isTempo)
+						buffer.insert(0, "Temporary ");
+					else if (isBecoming)
+						buffer.insert(0, "Becoming ");
 					items.add(new MItem(rawMatch, buffer.toString(), begin, end));
 				}
 			}

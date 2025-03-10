@@ -40,6 +40,8 @@ public class MMetarDefinitions
 		colorRemarks.put("BLACK", "Black, Operations restricted or closed");
 		
 		colorRemarks.put("YLO", "Yellow, IFR conditions");
+		colorRemarks.put("YLO1", "Yellow, IFR conditions");
+		colorRemarks.put("YLO2", "Yellow, IFR conditions");
 		colorRemarks.put("AMB", "Amber, IFR conditions");
 		colorRemarks.put("RED", "Red, low IFR conditions");
 	
