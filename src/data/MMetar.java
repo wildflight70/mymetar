@@ -44,7 +44,7 @@ public class MMetar
 	public String temporary = "";
 	public String becoming = "";
 
-	private ArrayList<MItem> items;
+	public ArrayList<MItem> items;
 	public ArrayList<MRemark> remarks;
 
 	public String extraFlightCategory = "";

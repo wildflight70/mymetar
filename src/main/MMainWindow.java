@@ -13,6 +13,7 @@ import javax.swing.JMenuItem;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 
+import bottom.MBottom;
 import util.MTableColumnAdjuster;
 
 @SuppressWarnings("serial")
