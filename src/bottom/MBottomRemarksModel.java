@@ -46,4 +46,15 @@ class MBottomRemarksModel extends AbstractTableModel
 			return null;
 		}
 	}
+
+	public void load(ArrayList<MRemark> _remarks)
+	{
+		if (_remarks != null)
+		{
+			remarks = new ArrayList<MRemark>();
+			for (MRemark remark : _remarks)
+				if (remark.value != null)
+					remarks.add(remark);
+		}
+	}
 }

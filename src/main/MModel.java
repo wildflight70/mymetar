@@ -582,15 +582,18 @@ public class MModel extends AbstractTableModel
 		for (MMetar metar : noaaFtpMetars)
 		{
 			MAirport airport = get(metar.stationId);
-			if (airport != null)
+			if (airport == null)
 			{
-				airport.metar = metar;
-				airport.xPlane = xPlaneMap.containsKey(metar.stationId);
-
-				totalMetars++;
-				if (metar.notDecoded)
-					totalMetarNotDecoded++;
+				airport = new MAirport(metar.stationId);
+				airports.add(airport);
 			}
+
+			airport.metar = metar;
+			airport.xPlane = xPlaneMap.containsKey(metar.stationId);
+
+			totalMetars++;
+			if (metar.notDecoded)
+				totalMetarNotDecoded++;
 
 			MMetar apiMetar = noaaApiMetars.get(metar.stationId);
 			if (apiMetar != null)

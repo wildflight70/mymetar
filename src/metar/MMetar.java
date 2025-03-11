@@ -232,12 +232,16 @@ public class MMetar
 		// 2. Decode after RMK
 		decodeRemarks();
 
+		// 3. Highlight groups of isolated slashes
+		decodeSlash();
+
+		// 4. Clean temporary and becoming
 		if (temporary.endsWith(", "))
 			temporary = temporary.substring(0, temporary.length() - 2);
 		if (becoming.endsWith(", "))
 			becoming = becoming.substring(0, becoming.length() - 2);
 
-		// 3. Sort items and remarks by begin
+		// 5. Sort items and remarks by begin
 		Collections.sort(items, new Comparator<MItem>()
 		{
 			@Override
@@ -256,11 +260,10 @@ public class MMetar
 			}
 		});
 
-		// 4. Update rawTextHighlight and highlight groups of slashes
+		// 6. Update rawTextHighlight
 		rawTextHighlight = highlight(null, null);
-		decodeSlash();
 
-		// 5. Check if metar is not totally decoded
+		// 7. Check if metar is not totally decoded
 		notDecoded();
 	}
 
@@ -310,20 +313,32 @@ public class MMetar
 		}
 	}
 
-	private static final Pattern PATTERN_SLASH = Pattern.compile("(?<= )/+/+(?= )|/+/+(?=$)|[AQ]/{4}");
+	private static final Pattern PATTERN_SLASH = Pattern.compile("\\s(/{2,9}|[AQ]/{4})(?=\\s|$)");
 
 	private void decodeSlash()
 	{
-		StringBuffer buffer = new StringBuffer();
-		Matcher matcher = PATTERN_SLASH.matcher(rawTextHighlight);
+		Matcher matcher = PATTERN_SLASH.matcher(rawTextBeforeRMK);
 		while (matcher.find())
 		{
-			String rawMatch = matcher.group();
+			String rawMatch = matcher.group(0);
+			int begin = matcher.start(0);
+			int end = matcher.end(0);
 
-			matcher.appendReplacement(buffer, "<b>" + rawMatch + "</b>");
+			items.add(new MItem(rawMatch, null, begin, end));
 		}
-		matcher.appendTail(buffer);
-		rawTextHighlight = buffer.toString();
+
+		if (rawTextAfterRMK != null)
+		{
+			matcher = PATTERN_SLASH.matcher(rawTextAfterRMK);
+			while (matcher.find())
+			{
+				String rawMatch = matcher.group(0);
+				int begin = matcher.start(0);
+				int end = matcher.end(0);
+
+				remarks.add(new MRemark(rawMatch, null, begin, end));
+			}
+		}
 	}
 
 	private static final Pattern PATTERN_COLOR = Pattern.compile("\\b(AMB|(BLACK)?BLU|(BLACK)?GRN|RED|WHT|YLO[12]?)\\+?");
@@ -1479,6 +1494,7 @@ public class MMetar
 	private static final Pattern PATTERN_REMARK_PRECIPITATIONS = Pattern
 			.compile("\\b(" + REMARK_PRECIPITATIONS + "){1,}");
 	private static final Pattern PATTERN_REMARK_PRECIPITATIONS_INSIDE = Pattern.compile(REMARK_PRECIPITATIONS);
+	private static final Pattern PATTERN_REMARK_PRECISE_PRECIPITATIONS = Pattern.compile("\\s7(\\d)(\\d{3})(?=\\s|$)");
 
 	private void decodeRemarksPrecipitations()
 	{
@@ -1536,6 +1552,19 @@ public class MMetar
 				buffer.delete(buffer.length() - 2, buffer.length());
 
 			remarks.add(new MRemark(rawMatch, buffer.toString(), begin, end));
+		}
+
+		matcher = PATTERN_REMARK_PRECISE_PRECIPITATIONS.matcher(rawTextAfterRMK);
+		while (matcher.find())
+		{
+			String rawMatch = matcher.group(0).trim();
+			int begin = matcher.start(0) + 1;
+			int end = matcher.end(0);
+
+			String rawPrecipitation = matcher.group(2);
+			double precipitation = Double.parseDouble(rawPrecipitation) / 100.0;
+
+			remarks.add(new MRemark(rawMatch, "24-hour precipitation=" + precipitation + " inches", begin, end));
 		}
 	}
 
