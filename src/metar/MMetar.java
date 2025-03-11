@@ -994,6 +994,8 @@ public class MMetar
 
 	private static final Pattern PATTERN_REMARK_PRECISE_TEMPERATURE = Pattern
 			.compile("\\bT(\\d)(\\d{3})((\\d)(\\d{3}))?");
+	private static final Pattern PATTERN_REMARK_PRECISE_TEMPERATURE_2 = Pattern
+			.compile("\\s([12])(\\d)(\\d{3})(?=\\s|$)");
 
 	private void decodeRemarksPreciseTemperature()
 	{
@@ -1021,6 +1023,31 @@ public class MMetar
 				buffer.append(", dew point=" + MFormat.instance.numberFormatDecimal1.format(dewPoint) + "°C");
 			}
 
+			remarks.add(new MRemark(rawMatch, buffer.toString(), begin, end));
+		}
+
+		matcher = PATTERN_REMARK_PRECISE_TEMPERATURE_2.matcher(rawTextAfterRMK);
+		while (matcher.find())
+		{
+			String rawMatch = matcher.group(0).trim();
+			int begin = matcher.start(0) + 1;
+			int end = matcher.end(0);
+
+			String rawMinMax = matcher.group(1);
+			String rawSign = matcher.group(2);
+			String rawTemperature = matcher.group(3);
+
+			StringBuffer buffer = new StringBuffer("6-hour ");
+			if (rawMinMax.equals("1"))
+				buffer.append("maximum");
+			else // 2
+				buffer.append("minimum");
+
+			double temperature = Double.parseDouble(rawTemperature) / 10.0;
+			if (rawSign.equals("1"))
+				temperature = -temperature;
+
+			buffer.append(" temperature=" + temperature + "°C");
 			remarks.add(new MRemark(rawMatch, buffer.toString(), begin, end));
 		}
 	}
