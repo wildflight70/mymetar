@@ -36,7 +36,7 @@ public class MBottom extends JPanel
 
 	private MBottomRemarksModel remarksModel;
 	private MBottomRemarksTable remarksTable;
-	
+
 	public MMetar metar;
 
 	private Font boldFont = getFont().deriveFont(Font.BOLD);
@@ -66,7 +66,7 @@ public class MBottom extends JPanel
 		c.gridy = 1;
 		c.anchor = GridBagConstraints.FIRST_LINE_START;
 		panel.add(createItems(), c);
-		
+
 		// Remarks
 		c.gridx = 1;
 		c.gridy = 1;
@@ -161,7 +161,7 @@ public class MBottom extends JPanel
 
 		return panel;
 	}
-	
+
 	private JPanel createItems()
 	{
 		JPanel panel = new JPanel(new BorderLayout());
@@ -179,7 +179,7 @@ public class MBottom extends JPanel
 
 		return panel;
 	}
-	
+
 	private JPanel createRemarks()
 	{
 		JPanel panel = new JPanel(new BorderLayout());
@@ -201,21 +201,24 @@ public class MBottom extends JPanel
 	public void update(MAirport _airport)
 	{
 		metar = _airport.metar;
-		
+
 		labelMetarValue.setText(_airport.metar == null ? "" : _airport.metar.rawTextHighlight);
 		labelMetarValue
 				.setBackground((_airport.metar == null || !_airport.metar.notDecoded) ? labelAirportValue.getBackground()
 						: MTable.NOT_DECODED_COLOR);
 
 		labelAirportValue.setText(_airport.name);
-		labelCountryValue.setText(countries.get(_airport.country).toString());
+
+		MCountry country = countries.get(_airport.country);
+		labelCountryValue.setText(country == null ? "" : country.toString());
+		
 		labelCityValue.setText(_airport.city);
 
-		itemsModel.items = _airport.metar == null ? null : _airport.metar.items;
+		itemsModel.load(_airport.metar == null ? null : _airport.metar.items);
 		itemsModel.fireTableDataChanged();
 		new MTableColumnAdjuster(itemsTable).adjustColumns();
 
-		remarksModel.remarks = _airport.metar == null ? null : _airport.metar.remarks;
+		remarksModel.load(_airport.metar == null ? null : _airport.metar.remarks);
 		remarksModel.fireTableDataChanged();
 		new MTableColumnAdjuster(remarksTable).adjustColumns();
 	}

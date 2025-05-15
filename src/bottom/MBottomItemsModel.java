@@ -46,4 +46,15 @@ class MBottomItemsModel extends AbstractTableModel
 			return null;
 		}
 	}
+
+	public void load(ArrayList<MItem> _items)
+	{
+		if (_items != null)
+		{
+			items = new ArrayList<MItem>();
+			for (MItem item : _items)
+				if (item.value != null)
+					items.add(item);
+		}
+	}
 }

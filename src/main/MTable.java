@@ -156,20 +156,6 @@ public class MTable extends JTable
 		});
 		popup.add(menuItemCopyMetarClipboard);
 
-		JMenuItem menuItemCopyMetarHighlightClipboard = new JMenuItem("Copy highlight METAR to clipboard");
-		menuItemCopyMetarHighlightClipboard.addActionListener(new ActionListener()
-		{
-			@Override
-			public void actionPerformed(ActionEvent e)
-			{
-				int selectedRow = getSelectedRow();
-				MAirport selectedAirport = model.visibleAirports.get(selectedRow);
-				if (selectedAirport.metar != null)
-					new MClipboard().copy(selectedAirport.metar.rawTextHighlight);
-			}
-		});
-		popup.add(menuItemCopyMetarHighlightClipboard);
-
 		JMenuItem menuItemPrintMetar = new JMenuItem("Print METAR to output");
 		menuItemPrintMetar.addActionListener(new ActionListener()
 		{
