@@ -541,7 +541,7 @@ public class MMetar
 	}
 
 	private static final Pattern PATTERN_VISIBILITY = Pattern
-			.compile("\\b(\\d+\\s*\\d*/\\d+|\\d+)(?<unit>\\sHZSM|SM|KM)\\b|\\b(\\d{4})(NDV)?\\b");
+			.compile("\\b(\\d+\\s*\\d*/\\d+|\\d+)(?<unit>\\sHZSM|SM|KM)\\b|\\s(\\d{4})(NDV)?\\b");
 	private static final Pattern PATTERN_VISIBILITY_EXTRA = Pattern.compile("\\s(\\d{4})(E|S|SE|N|NW|W)\\b");
 
 	private void decodeVisibility()
@@ -551,6 +551,11 @@ public class MMetar
 		{
 			String rawMatch = matcher.group(0);
 			int begin = matcher.start(0);
+			if (rawMatch.startsWith(" "))
+			{
+				rawMatch = rawMatch.trim();
+				begin++;
+			}
 			int end = matcher.end(0);
 
 			boolean isTempo = isTempoBeforeRMK(begin);
@@ -880,7 +885,7 @@ public class MMetar
 				minVisibility = Integer.parseInt(rawMinVisibility);
 			else
 				minVisibility = (int) Math.round(MUnit.feetToMeters(Integer.parseInt(rawMinVisibility)));
-			int maxVisibility = rawMaxVisibility == null ? -1
+			int maxVisibility = rawMaxVisibility == null ? Integer.MIN_VALUE
 					: (int) Math.round(MUnit.feetToMeters(Integer.parseInt(rawMaxVisibility)));
 
 			String trend = MMetarDefinitions.instance.runwayTrends.get(rawTrend);
